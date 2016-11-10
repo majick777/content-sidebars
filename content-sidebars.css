@@ -1,0 +1,26 @@
+
+/* Sidebar Styles */
+
+#loginsidebar {z-index:2;}
+#loginsidebar .loginwidget li {list-style:none; vertical-align:middle; margin-right:10px;}
+#loginsidebar .loginwidget input {height:1.7em;}
+
+#membersidebar .memberwidget ul {display:inline-block; list-style:none;}
+
+#abovecontentsidebar {width: 100%;}
+#abovecontentsidebar .abovecontentwidget {display:inline; margin-top:10px; margin-left:5px; margin-right:5px;}
+#abovecontentsidebar .abovecontentwidget ul {list-style:none;}
+#abovecontentsidebar .abovecontentwidget li {display:inline-block; list-style:none; vertical-align:top; margin-right:10px;}
+
+#belowcontentsidebar {width: 100%;}
+#belowcontentsidebar .belowcontentwidget {display:inline; margin-top:10px; margin-left:10px; margin-right:10px;}
+#belowcontentsidebar .belowcontentwidget ul {list-style:none;}
+#belowcontentsidebar .belowcontentwidget li {display:inline-block; list-style:none; vertical-align:top; margin-right:10px;}
+
+/* Integration Tweaks */
+
+.oneall_social_login {width:65px; overflow:visible;}
+#theme-my-login1 ul li {display: inline-block; list-style:none;}
+.tml-user-links {display:inline-block; list-style:none;}
+.tml-user-links li {margin-right:20px;}
+#membersidebar .memberwidget .tml-user-avatar {float:left; margin-right:20px;}
