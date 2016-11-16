@@ -2,6 +2,10 @@
 
 	header("Content-type: text/css; charset: UTF-8");
 
-	echo get_option('fcs_dynamic_css');
+	$contentsidebars = get_option('content_sidebars');
+
+	echo $contentsidebars['dynamic_css'];
+
+	exit;
 
 ?>
