@@ -41,8 +41,8 @@ Additional Sidebars (Widget Areas) available through **Content Sidebars**:
 All Sidebars persist between Theme activations/deactivations, making theme conversions 
 easier too - no need to add all the Widgets again or even move them. 
 
-There are also PerPost overrides available via the Content Sidebars metabox for each 
-post type on the post writing/editing screen to disable any of these sidebars for that page.
+There are also PerPost overrides available via the Content Sidebars metabox for each post
+type on the post writing/editing screen to enable/disable any of these sidebars for that page.
 
 Filters and Widget plugins are available for advanced display and output logic for all 
 sidebars, giving even further flexible options to when and which sidebars are displayed.
@@ -63,6 +63,7 @@ these spaces wisely on any webpage is a must.
 The Above/Below Sidebars work either via Template Action Hooks or Content Filters methods.
 Either method can be used with any theme. The Template Action Hook defaults are preconfigured 
 for immediate use with [BioShip Child Theme Framework] (http://bioship.space)
+
 
 **Login Sidebar** - *for Easy Return Visitor Login*
 
@@ -102,7 +103,7 @@ in your Sidebars. However, in different conditions you may want this shortcode t
 nothing at all. If you were using a normal text widget it would still output the empty widget
 (with title etc.) - but with a Discreet Text Widget, if the shortcode returns empty the widget
 does not output at all. So this useful type of widget as been included with Content Sidebars.
-Source: [Hackadelic Discreet Text Widget] (https://wordpress.org/plugins/hackadelic-discreet-text-widget/)
+Credit: [Hackadelic Discreet Text Widget] (https://wordpress.org/plugins/hackadelic-discreet-text-widget/)
 
 [Content Sidebars Home] (http://wordquest.org/plugins/content-sidebars/)
 [Support Forum] (http://wordquest.org/quest/quest-category/plugin-support/content-sidebars/)
@@ -119,8 +120,8 @@ Source: [Hackadelic Discreet Text Widget] (https://wordpress.org/plugins/hackade
 
 = How do I use this plugin? =
 
-1. Once activated your will have additional Widget Areas available via Appearance - Widgets.
-1. You can change which Sidebars you want activated via Appearance -> Content Sidebars.
+1. Once activated your will have additional Widget Areas available via Appearance -> Widgets.
+1. You can change your Content Sidebar Settings via Appearance -> Content Sidebars.
 1. There are other options relating to the different types of Sidebars explained below.
 1. You can change PerPost Sidebar Display options via the post writing/editing screen Metabox.
 1. You can use filters or plugins to change the Sidebar output conditions (see last question.)
@@ -145,10 +146,10 @@ The relevent CSS IDs and classes for the different Sidebar types and widgets are
 
 `| Sidebar ID --------| Sidebar Class ----| Widget Class -------| Widget Title Class`
 `---------------------.-------------------.---------------------.-------------------`
-`#abovecontentsidebar | .flexisidebar --- | .abovecontentwidget | .abovecontenttitle`
-`#belowcontentsidebar | .flexisidebar --- | .belowcontentwidget | .belowcontenttitle`
-`#loginsidebar -------| .flexisidebar --- | .loginwidget -------| .loginwidgettitle`
-`* .loggedinsidebar --| .flexisidebar --- | .memberwidget ------| .memberwidgettitle`
+`#abovecontentsidebar | .contentsidebar - | .abovecontentwidget | .abovecontenttitle`
+`#belowcontentsidebar | .contentsidebar - | .belowcontentwidget | .belowcontenttitle`
+`#loginsidebar -------| .contentsidebar - | .loginwidget -------| .loginwidgettitle`
+`* .loggedinsidebar --| .contentsidebar - | .loggedinwidget ----| .loggedinwidgettitle`
 `#shortcodesidebar1 --| .shortcodesidebar | .shortcodewidget ---| .shortcodewidgettitle`
 `#shortcodesidebar2 --| .shortcodesidebar | .shortcodewidget ---| .shortcodewidgettitle`
 `#shortcodesidebar3 --| .shortcodesidebar | .shortcodewidget ---| .shortcodewidgettitle`
@@ -265,7 +266,7 @@ A very flexible way of adding custom content to your Sidebars is through using a
 within a Text Widget. In order to do so, you need to make sure the Wordpress shortcode 
 filter is applied to the widget_text content. Here is what this code looks like:
 `<?php if (!has_filter('widget_text','do_shortcode')) {add_filter('widget_text','do_shortcode');} ?>`
-You can activate this code from the Settings page for widget text and optionally widget titles.
+You can activate this code from the Settings page for widget text (and optionally widget titles.)
 You can also place this code in a PHP file in your /wp-content/mu-plugins/ folder.
 
 Once you know that is in place, you can add any shortcode to a Text Widget and it will be
@@ -278,38 +279,67 @@ returns nothing (eg. for an empty shopping cart) then the Text Widget does not s
 all (ie. the Widget title is not displayed either if there is no Widget text output) 
 
 
-= How do I use filter the Sidebars for different conditions? =
+= How do I use filter individual Widgets for different conditions? =
 
 The easy way to do this is in combination with a *conditional widget plugin*, so you can 
-drop those Widgets in the sidebars of your choiced to display a Widget conditionally in 
+drop those Widgets in the Sidebars of your choice to display a Widget conditionally in 
 any of these new Sidebar areas for different purposes. ie. posts or pages or CPTs or
 other conditions. eg. [Widget Logic Plugin], [Display Widgets Plugin], etc...
 
-The other way to do this for an even more advanced custom setup is to do it manually with 
-filters. The available filter names - one for each of the sidebars - are as follows:
-`fcs_login_sidebar, fcs_above_content_sidebar, fcs_below_content_sidebar`
+
+= How do I use filter Sidebars for different conditions? =
+
+For a more advanced or custom setup you can modify any of the Plugin Settings via Filters.
+For consistency these filters have the same key as the plugin settings. The full list of
+settings (and thus filters) can be seen in the plugin setting initialization list.
+
+For example, you can disable a sidebar according to conditions using these filters:
+`fcs_abovecontent_disable, fcs_belowcontent_disable, fcs_login_disable, fcs_member_disable`
 `fcs_shortcode_sidebar1, fcs_shortcode_sidebar2, fcs_shortcode_sidebar3`
 `fcs_inpost_sidebar1, fcs_inpost_sidebar2, fcs_inpost_sidebar3`
 
-eg. To remove the Above Content Sidebar from only the site Front Page:
-`add_filter('fcs_abovecontent_sidebar','my_custom_sidebar_filter');`
-`function my_custom_sidebar_filter() {if (is_front_page()) {return '';} }`
+eg. To remove the above content sidebar from the site Front Page only:
+`add_filter('fcs_abovecontent_disable','my_custom_sidebar_filter1');`
+`function my_custom_sidebar_filter1() {if (is_front_page()) {return 'yes';} }`
+(for disbable filters, returning yes indicates the sidebar is to be *disabled*.)
+
+You can also filter the entire sidebar output with the following filters:
+`fcs_abovecontent_sidebar, fcs_belowcontent_sidebar, fcs_loginsidebar, fcs_member_sidebar`
+`fcs_shortcode_sidebar1, fcs_shortcode_sidebar2, fcs_shortcode_sidebar3`
+`fcs_inpost_sidebar1, fcs_inpost_sidebar2, fcs_inpost_sidebar3`
+
+eg. To replace the output of the Above Content Sidebar for the site Front Page only:
+`add_filter('fcs_abovecontent_sidebar','my_custom_sidebar_filter2');`
+`function my_custom_sidebar_filter2() {if (is_front_page()) {return 'Welcome!';} }`
 
 `*` additionally, `*_loggedout` and `*_loggedin` filters can be used for any sidebar.
 eg. To remove the Above Content Sidebar from the Front Page for logged in users:
-`add_filter('fcs_abovecontent_sidebar_loggedin','my_custom_sidebar_filter');`
-`function my_custom_sidebar_filter() {if (is_front_page()) {return '';} }`
+`add_filter('fcs_abovecontent_sidebar_loggedin','my_custom_sidebar_filter3');`
+`function my_custom_sidebar_filter3() {if (is_front_page()) {return '';} }`
 
-Other uses might include checks like `is_home`, `is_search`, `is_archive`, `is_404`...
-And there we shall leave other custom examples up to your unlimited imagination...
+Using the filters makes when, where and what your sidebars display for different page
+conditions extremely flexible... we leave it up to your unlimited imagination!
+
 
 
 == Screenshots ==
 
-1. A screenshot of the Sidebar Layout Positions.
+1. A screenshot example of the default Content Sidebar Layout Positions.
+1. A screenshot example of an InPost paragraphs Content area.
+1. A screenshot of the post Sidebar Override Metabox.
 
 
 == Changelog ==
+
+= 1.4.0 =
+* Improved Overall Plugin Logic
+* Improved Fallback Selection Options
+* Added Plugin Settings Auto-Filter
+* Added InPost Float Options
+* Updated Dynamic CSS loader with cachebusting
+* Split active/inactive Widget Page display
+* Revamped: Metabox Override System
+* Made Translation Ready
 
 = 1.3.5 =
 * First Public Release Version
