@@ -5,7 +5,7 @@ Plugin Name: Content Sidebars
 Plugin URI: http://wordquest.org/plugins/content-siderbars/
 Author: Tony Hayes
 Description: Adds Flexible Dynamic Sidebars to your Content Areas without editing your theme.
-Version: 1.4.0
+Version: 1.4.5
 Author URI: http://wordquest.org/
 */
 
@@ -31,7 +31,7 @@ Author URI: http://wordquest.org/
 // -----------------
 global $wordquestplugins;
 $vslug = $vfcsslug = 'content-sidebars';
-$wordquestplugins[$vslug]['version'] = $vfcsversion = '1.4.0';
+$wordquestplugins[$vslug]['version'] = $vfcsversion = '1.4.5';
 $wordquestplugins[$vslug]['title'] = 'Content Sidebars';
 $wordquestplugins[$vslug]['namespace'] = 'fcs';
 $wordquestplugins[$vslug]['settings'] = 'fcs';
@@ -171,7 +171,7 @@ if (strstr($_SERVER['REQUEST_URI'],'/wp-admin/themes.php')) {
 
 // Load Sidebar Styles
 // -------------------
-// 1.3.5: changed to wp_enqueue_scripts
+// 1.3.5: changed to wp_enqueue_scripts hook
 add_action('wp_enqueue_scripts','fcs_queue_styles');
 function fcs_queue_styles() {
 	$vcssmode = fcs_get_option('fcs_css_mode',true);
@@ -179,9 +179,15 @@ function fcs_queue_styles() {
 		$vflexisidebarcss = plugins_url('content-sidebars.css', __FILE__);
 		wp_enqueue_style('flexi_content_sidebar_styles',$vflexisidebarcss);
 	}
-	elseif ($vcssmode == 'dynamic') {
+	elseif ($vcssmode == 'adminajax') {
 		$vversion = fcs_get_option('last_saved');
 		wp_enqueue_style('fcs-dynamic', admin_url('admin-ajax.php').'?action=fcs_dynamic_css', array(), $vversion); // $media
+	}
+	elseif ( ($vcssmode == 'direct') || ($vcssmode == 'dynamic') ) {
+	 	// 1.4.5: added direct URL load option as new default
+		$vversion = fcs_get_option('last_saved');
+		$vcssurl = plugin_dir_url(__FILE__).'content-sidebars-css.php';
+		wp_enqueue_style('fcs-dynamic', $vcssurl, array(), $vversion); // $media
 	}
 }
 
@@ -189,7 +195,7 @@ function fcs_queue_styles() {
 // -----------------------
 add_action('wp_ajax_fcs_dynamic_css', 'fcs_dynamic_css');
 add_action('wp_ajax_nopriv_fcs_dynamic_css', 'fcs_dynamic_css');
-function fcs_dynamic_css() {require(dirname(__FILE__).'/dynamic-css.php'); exit;}
+function fcs_dynamic_css() {require(dirname(__FILE__).'/content-sidebars-css.php'); exit;}
 
 // Widget Page Styles
 // ------------------
@@ -239,7 +245,16 @@ if ( (isset($_GET['csshero_action'])) && ($_GET['csshero_action'] == 'edit_page'
 global $vfcsoptions; $vfcsoptions = get_option('content_sidebars');
 // print_r($vfcsoptions); // debug point
 
-// Set Login State
+// set Excerpt State Filters
+// -------------------------
+// 1.4.5: added to better handle excerpt output
+global $vfcsexcerpt; $vfcsexcerpt = false;
+add_filter('get_the_excerpt','fcs_doing_excerpt_on',0);
+add_filter('get_the_excerpt','fcs_doing_excerpt_off',999);
+function fcs_doing_excerpt_on($vexcerpt) {global $vfcsexcerpt; $vfcsexcerpt = true; return $vexcerpt;}
+function fcs_doing_excerpt_off($vexcerpt) {global $vfcsexcerpt; $vfcsexcerpt = false; return $vexcerpt;}
+
+// set Login State
 // ---------------
 // 1.3.5: set login state once for efficiency
 global $vfcsstate;
@@ -249,6 +264,28 @@ function fcs_set_login_state() {
 	$current_user = wp_get_current_user();
 	if ($current_user->exists()) {$vfcsstate = 'loggedin';}
 	else {$vfcsstate = 'loggedout';}
+}
+
+// Set Pageload Context
+// --------------------
+// 1.4.5: added this once-off context checker
+add_action('wp','fcs_set_page_context');
+function fcs_set_page_context() {
+	global $vfcscontext, $vfcsarchive;
+	$vfcscontext = ''; $vfcsarchive = '';
+	if (is_front_page()) {$vfcscontext = 'frontpage';}
+	elseif (is_home()) {$vfcscontext = 'home';}
+	elseif (is_404()) {$vfcscontext = '404';}
+	elseif (is_search()) {$vfcscontext = 'search';}
+	elseif (is_singular()) {$vfcscontext = 'singular';}
+	elseif (is_archive()) {
+		$vfcscontext = 'archive';
+		if (is_tag()) {$vfcsarchive = 'tag';}
+		elseif (is_category()) {$vfcsarchive = 'category';}
+		elseif (is_tax()) {$vfcsarchive = 'taxonomy';}
+		elseif (is_author()) {$vfcsarchive = 'author';}
+		elseif (is_date()) {$vfcsarchive = 'date';}
+	}
 }
 
 // Get Sidebar Overrides
@@ -290,6 +327,45 @@ function fcs_get_sidebar($vsidebar) {
 	return $vsidebarcontents;
 }
 
+// Check Context Helper
+// --------------------
+function fcs_check_context($vdisable,$vsidebar) {
+	global $vfcscontext, $vfcsarchive;
+
+	$vdisablein = $vdisable;
+	if ($vfcscontext == 'singular') {
+		// maybe disable if sidebar not active for this CPT
+		global $post; $vpostid = $post->ID; $vposttype = get_post_type($vpostid);
+		$vcptoptions = fcs_get_option('fcs_'.$vsidebar.'_sidebar_cpts',true);
+		if (strstr($vcptoptions,',')) {$vactivecpts = explode(',',$vcptoptions);}
+		else {$vactivecpts[0] = $vcptoptions;}
+	 	if (!in_array($vposttype,$vactivecpts)) {$vdisable = 'yes';}
+	 	$vdebug = 'Post Type: '.$vposttype.' in '.$vcptoptions;
+	} elseif ($vfcscontext == 'archive') {
+		// maybe disable if sidebar not active for this archive
+		$varchiveoptions = fcs_get_option('fcs_'.$vsidebar.'_sidebar_archives');
+		if (strstr($varchiveoptions,',')) {$varchives = explode(',',$varchiveoptions);}
+		else {$varchives[0] = $varchiveoptions;}
+		if (!in_array('archive',$varchives)) {
+			if (!in_array($vfcsarchive,$varchives)) {$vdisable = 'yes';}
+		}
+		$vdebug = 'Archive: '.$vfcsarchive.' in '.$varchiveoptions;
+	} elseif ($vfcscontext != '') {
+		// maybe disable if sidebar not active for this context
+		$vpageoptions = fcs_get_option('fcs_'.$vsidebar.'_sidebar_pages');
+		if (strstr($vpageoptions,',')) {$vcontexts = explode(',',$vpageoptions);}
+		else {$vcontexts[0] = $vpageoptions;}
+		if (!in_array($vfcscontext,$vcontexts)) {$vdisable = 'yes';}
+		$vdebug = 'Page Context: '.$vfcscontext.' in '.$vpageoptions;
+	} else {$vdisable = 'yes';}
+
+	// debug point for disable change
+	if ($vdisablein != $vdisable) {
+		// echo "<!-- ".$vsidebar." sidebar disabled (".$vdebug.") -->";
+	}
+
+	return $vdisable;
+}
 
 // --------------
 // Plugin Options
@@ -315,9 +391,12 @@ if ( (get_option('fcs_abovebelow_method')) && (!get_option('content_sidebars')) 
 	$vfcsoptionkeys = array(
 		'abovebelow_method','abovecontent_hook','belowcontent_hook','loginsidebar_hook','membersidebar_hook',
 		'abovecontent_priority','belowcontent_priority','loginsidebar_priority','membersidebar_priority',
-		'abovecontent_fallback','belowcontent_fallback','loginsidebar_fallback',
-		'abovecontent_sidebar_cpts','belowcontent_sidebar_cpts','inpost_sidebars_cpts',
+		'abovecontent_fallback','belowcontent_fallback','loginsidebar_fallback', 'membersidebar_mode',
+		'abovecontent_sidebar_cpts','belowcontent_sidebar_cpts','inpost_sidebars_cpts','member_sidebar_cpts',
+		'abovecontent_sidebar_pages','belowcontent_sidebar_pages','login_sidebar_pages','member_sidebar_pages',
+		'abovecontent_sidebar_archives','belowcontent_sidebar_archives','login_sidebar_archives','member_sidebar_archives',
 		'loginsidebar_disable', 'membersidebar_disable', 'abovecontent_disable', 'belowcontent_disable',
+		'widget_text_shortcodes','widget_title_shortcodes','excerpt_shortcodes','sidebars_in_excerpts',
 		'shortcode1_disable', 'shortcode2_disable', 'shortcode3_disable',
 		'inpost1_disable','inpost2_disable','inpost3_disable','inpost_marker','inpost_priority',
 		'inpost_positiona','inpost_positionb','inpost_positionc','inpost1_float','inpost2_float','inpost3_float',
@@ -351,7 +430,7 @@ function fcs_add_options() {
 	$vfcsoptions['abovecontent_hook'] = 'skeleton_before_loop';
 	$vfcsoptions['belowcontent_hook'] = 'skeleton_after_loop';
 	$vfcsoptions['loginsidebar_hook'] = 'skeleton_before_header';
-	$vfcsoptions['membersidebar_hook'] = '';
+	$vfcsoptions['membersidebar_hook'] = 'skeleton_after_header';
 
 	// hook priorities
 	$vfcsoptions['abovecontent_priority'] = '5';
@@ -363,6 +442,7 @@ function fcs_add_options() {
 	$vfcsoptions['abovecontent_fallback'] = '';
 	$vfcsoptions['belowcontent_fallback'] = '';
 	$vfcsoptions['loginsidebar_fallback'] = 'fallback';
+	$vfssoptions['membersidebar_mode'] = 'fallback';
 
 	// post types
 	$vfcsoptions['abovecontent_sidebar_cpts'] = 'page';
@@ -370,6 +450,18 @@ function fcs_add_options() {
 	$vfcsoptions['login_sidebar_cpts'] = 'post,page';
 	$vfcsoptions['member_sidebar_cpts'] = 'post,page';
 	$vfcsoptions['inpost_sidebars_cpts'] = 'article';
+
+	// 1.4.5: added page contexts
+	$vfcsoptions['abovecontent_sidebar_pages'] = '';
+	$vfcsoptions['belowcontent_sidebar_pages'] = '';
+	$vfcsoptions['login_sidebar_pages'] = '';
+	$vfcsoptions['member_sidebar_pages'] = '';
+
+	// 1.4.5: added archive contexts
+	$vfcsoptions['abovecontent_sidebar_archives'] = '';
+	$vfcsoptions['belowcontent_sidebar_archives'] = '';
+	$vfcsoptions['login_sidebar_archives'] = '';
+	$vfcsoptions['member_sidebar_archives'] = '';
 
 	// disablers
 	$vfcsoptions['loginsidebar_disable'] = '';
@@ -393,9 +485,11 @@ function fcs_add_options() {
 	$vfcsoptions['inpost3_float'] = 'right';
 	$vfcsoptions['inpost_priority'] = '100';
 
-	// widget options
+	// shortcode options
 	$vfcsoptions['widget_text_shortcodes'] = 'yes';
 	$vfcsoptions['widget_title_shortcodes'] = '';
+	$vfcsoptions['excerpt_shortcodes'] = '';
+	$vfcsoptions['sidebars_in_excerpts'] = '';
 
 	// css options
 	$vdefaultcss = file_get_contents(dirname(__FILE__).'/content-sidebars.css');
@@ -438,12 +532,13 @@ function fcs_update_options() {
 	$vfcsoptionkeys = array('abovebelow_method',
 		'abovecontent_hook','belowcontent_hook','loginsidebar_hook','membersidebar_hook',
 		'abovecontent_priority','belowcontent_priority','loginsidebar_priority','membersidebar_priority',
-		'abovecontent_fallback','belowcontent_fallback','loginsidebar_fallback',
+		'abovecontent_fallback','belowcontent_fallback','loginsidebar_fallback','membersidebar_mode',
 		'membersidebar_disable', 'loginsidebar_disable', 'abovecontent_disable', 'belowcontent_disable',
-		'shortcode1_disable', 'shortcode2_disable', 'shortcode3_disable',
+		'widget_text_shortcodes','widget_title_shortcodes','excerpt_shortcodes','sidebars_in_excerpts',
+		'shortcode1_disable','shortcode2_disable','shortcode3_disable',
 		'inpost1_disable','inpost2_disable','inpost3_disable','inpost_marker','inpost_priority',
 		'inpost_positiona','inpost_positionb','inpost_positionc','inpost1_float','inpost2_float','inpost3_float',
-		'widget_text_shortcodes','widget_title_shortcodes','css_mode','dynamic_css'
+		'css_mode','dynamic_css'
 	);
 
 	foreach ($vfcsoptionkeys as $vkey) {
@@ -457,62 +552,40 @@ function fcs_update_options() {
 	$vcptlist = get_post_types($vargs,'names','and');
 	$vcpts = array_merge($vcpts,$vcptlist);
 
-	// above content post types
-	$vi = 0; $vnewcpts = array();
-	foreach ($vcpts as $vcpt) {
-		$vpostkey = 'fcs_abovecontent_posttype_'.$vcpt;
-		if (isset($_POST[$vpostkey])) {
-			if ($_POST[$vpostkey] == 'yes') {$vnewcpts[$vi] = $vcpt; $vi++;}
+	// 1.4.5: loop all sidebar post types (but not for shortcodes)
+	$vsidebars = array('abovecontent','belowcontent','login','member','inpost');
+	foreach ($vsidebars as $vsidebar) {
+		$vi = 0; $vnewcpts = array();
+		foreach ($vcpts as $vcpt) {
+			$vpostkey = 'fcs_'.$vsidebar.'_posttype_'.$vcpt;
+			if ( (isset($_POST[$vpostkey])) && ($_POST[$vpostkey] == 'yes') ) {$vnewcpts[$vi] = $vcpt; $vi++;}
 		}
+		$vcptoptions = implode(',',$vnewcpts);
+		if ($vsidebar == 'inpost') {$s = 's';} else {$s = '';}
+		$vfcsoptions[$vsidebar.'_sidebar'.$s.'_cpts'] = $vcptoptions;
 	}
-	$vcptoptions = implode(',',$vnewcpts);
-	$vfcsoptions['abovecontent_sidebar_cpts'] = $vcptoptions;
 
-	// below content post types
-	$vi = 0; $vnewcpts = array();
-	foreach ($vcpts as $vcpt) {
-		$vpostkey = 'fcs_belowcontent_posttype_'.$vcpt;
-		if (isset($_POST[$vpostkey])) {
-			if ($_POST[$vpostkey] == 'yes') {$vnewcpts[$vi] = $vcpt; $vi++;}
+	// added page and archive contexts
+	$vsidebars = array('abovecontent','belowcontent','login','member');
+	$vcontexts = array('frontpage','home','404','search');
+	$varchives = array('archive','tag','category','author','date');
+	foreach ($vsidebars as $vsidebar) {
+		$vi = 0; $vnewpages = array();
+		foreach ($vcontexts as $vcontext) {
+			$vpostkey = 'fcs_'.$vsidebar.'_pagetype_'.$vcontext;
+			if ( (isset($_POST[$vpostkey])) && ($_POST[$vpostkey] == 'yes') ) {$vnewpages[$vi] = $vcontext; $vi++;}
 		}
-	}
-	$vcptoptions = implode(',',$vnewcpts);
-	$vfcsoptions['belowcontent_sidebar_cpts'] = $vcptoptions;
+		$vpageoptions = implode(',',$vnewpages);
+		$vfcsoptions[$vsidebar.'_sidebar_pages'] = $vpageoptions;
 
-	// login sidebar post types
-	$vi = 0; $vnewcpts = array();
-	foreach ($vcpts as $vcpt) {
-		$vpostkey = 'fcs_login_posttype_'.$vcpt;
-		if (isset($_POST[$vpostkey])) {
-	 		if ($_POST[$vpostkey] == 'yes') {$vnewcpts[$vi] = $vcpt; $vi++;}
-	 	}
-	}
-	$vcptoptions = implode(',',$vnewcpts);
-	$vfcsoptions['login_sidebar_cpts'] = $vcptoptions;
-
-	// login sidebar post types
-	$vi = 0; $vnewcpts = array();
-	foreach ($vcpts as $vcpt) {
-		$vpostkey = 'fcs_member_posttype_'.$vcpt;
-		if (isset($_POST[$vpostkey])) {
-	 		if ($_POST[$vpostkey] == 'yes') {$vnewcpts[$vi] = $vcpt; $vi++;}
-	 	}
-	}
-	$vcptoptions = implode(',',$vnewcpts);
-	$vfcsoptions['member_sidebar_cpts'] = $vcptoptions;
-
-	// no shortcode post types needed
-
-	// inpost sidebar post types
-	$vi = 0; $vnewcpts = array();
-	foreach ($vcpts as $vcpt) {
-		$vpostkey = 'fcs_inpost_posttype_'.$vcpt;
-		if (isset($_POST[$vpostkey])) {
-			if ($_POST[$vpostkey] == 'yes') {$vnewcpts[$vi] = $vcpt; $vi++;}
+		$vi = 0; $vnewarchives = array();
+		foreach ($varchives as $varchive) {
+			$vpostkey = 'fcs_'.$vsidebar.'_archive_'.$varchive;
+			if ( (isset($_POST[$vpostkey])) && ($_POST[$vpostkey] == 'yes') ) {$vnewarchives[$vi] = $varchive; $vi++;}
 		}
+		$varchiveoptions = implode(',',$vnewarchives);
+		$vfcsoptions[$vsidebar.'_sidebar_archives'] = $varchiveoptions;
 	}
-	$vcptoptions = implode(',',$vnewcpts);
-	$vfcsoptions['inpost_sidebars_cpts'] = $vcptoptions;
 
 	$vfcsoptions['last_saved'] = time();
 	update_option('content_sidebars',$vfcsoptions);
@@ -529,7 +602,7 @@ function fcs_options_page() {
 	function loadcssfile() {document.getElementById('dynamiccss').value = document.getElementById('cssfile').value;}
 	function loadsavedcss() {document.getElementById('dynamiccss').value = document.getElementById('savedcss').value;}</script>";
 
-	echo "<style>.small {font-size:9pt;}</style>";
+	echo "<style>.small {font-size:9pt;} .wp-admin select.select {height:24px; line-height:22px; margin-top:-5px;</style>";
 
 	echo '<div class="wrap">';
 
@@ -545,20 +618,30 @@ function fcs_options_page() {
 	echo "<td width='20'></td>";
 	echo "<td><h3>v".$vfcsversion."</h3></td>";
 	echo "</td><td width='100'></td>";
-	if ( (isset($_REQUEST['update'])) && ($_REQUEST['updated'] == 'yes') ) {
+	if ( (isset($_REQUEST['updated'])) && ($_REQUEST['updated'] == 'yes') ) {
 		echo "<td><table style='background-color: lightYellow; border-style:solid; border-width:1px; border-color: #E6DB55; text-align:center;'>";
 		echo "<tr><td><div class='message' style='margin:0.25em;'><font style='font-weight:bold;'>";
 		echo __('Settings Updated.','csidebars')."</font></div></td></tr></table></td>";
 	}
 	echo "</tr></table><br>";
 
-	$vfallbackoptions = array('output' => 'Output', 'hidden' => 'Hide', 'fallback' => 'Fallback', 'nooutput' => 'No Output');
+	$vfallbackoptions = array(
+		'output' => __('Output','csidebars'), 'hidden' => __('Hide','bioship'),
+		'fallback' => __('Fallback','csidebars'), 'nooutput' => __('No Output','bioship')
+	);
 
 	// get post types
 	$vcpts[0] = 'post'; $vcpts[1] = 'page';
 	$vargs = array('public'=>true, '_builtin' => false);
 	$vcptlist = get_post_types($vargs,'names','and');
 	$vcpts = array_merge($vcpts,$vcptlist);
+
+	// 1.4.5: add page context options
+	$vcontexts = array('frontpage' => __('Front Page','csidebars'), 'home' => __('Blog Page','csidebars'),
+		'404' => __('404 Pages','csidebars'), 'search' => __('Search Pages','csidebars') );
+	$varchives = array('archive' => __('ALL','csidebars'), 'tag' => __('Tag','csidebars'),
+		'category' => __('Category','csidebars'), 'taxonomy' => __('Taxonomy','csidebars'),
+		'author' => __('Author','csidebars'), 'date' => __('Date','csidebars') );
 
 	echo "<div class='postbox' style='width:700px; line-height:2em;'><div class='inner' style='padding-left:20px;'>";
 	echo "<h3>".__('Extra Sidebars','csidebars')."</h3>";
@@ -582,7 +665,7 @@ function fcs_options_page() {
 	echo "<td class='small'>".__('Priority','csidebars').": </td>";
 	echo "<td><input type='text' class='small' name='fcs_abovecontent_priority' size='2' style='width:35px;' value='".fcs_get_option('fcs_abovecontent_priority')."'></td>";
 	echo "<td class='small'>".__('Logged In','csidebars').": </td>";
-	echo "<td><select name='fcs_abovecontent_fallback'>";
+	echo "<td><select name='fcs_abovecontent_fallback' class='select'>";
 		$vfallback = fcs_get_option('fcs_abovecontent_fallback');
 		foreach ($vfallbackoptions as $vkey => $vlabel) {
 			echo "<option value='".$vkey."'";
@@ -591,27 +674,57 @@ function fcs_options_page() {
 		}
 	echo "</select></td></tr>";
 
-	echo "<tr><td align='center'><table><tr><td><td class='small'>".__('Disable','csidebars').": </td>";
+	echo "<tr><td align='center' style='vertical-align:top;'>";
+	echo "<div style='text-align:right;'>Output Sidebar for:</div>";
+	echo "<table style='margin-top:20px;'><tr><td><td class='small'>".__('Disable','csidebars').": </td>";
 	echo "<td><input type='checkbox' name='fcs_abovecontent_disable' value='yes'";
 	if (fcs_get_option('fcs_abovecontent_disable') == 'yes') {echo " checked";}
 	echo "></td></tr></table></td><td width='10'></td>";
 
-	// post type selection for above content sidebars
-	$vgetcpts = fcs_get_option('fcs_abovecontent_sidebar_cpts');
-	if (strstr($vgetcpts,',')) {$vabovecpts = explode(',',$vgetcpts);}
-	else {$vabovecpts[0] = $vgetcpts;}
+	echo "<td align='left' colspan='6' class='small'>";
 
-	echo "<td align='left' colspan='6'>";
-	if (count($vcpts) > 0) {
-		echo "<ul><li style='display:inline-block; margin:0 10px 0 0;'>".__('Output on','csidebars').": </li>";
+		// post type selection for above content sidebars
+		$vgetcpts = fcs_get_option('fcs_abovecontent_sidebar_cpts');
+		if (strstr($vgetcpts,',')) {$vabovecpts = explode(',',$vgetcpts);}
+		else {$vabovecpts[0] = $vgetcpts;}
+		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 10px 0 0;'>";
+		echo __('Singular','csidebars').": </li>";
 		foreach ($vcpts as $vcpt) {
 			echo "<li style='display:inline-block; margin:0 10px;'>";
 			echo "<input type='checkbox' name='fcs_abovecontent_posttype_".$vcpt."' value='yes'";
 			if (in_array($vcpt,$vabovecpts)) {echo " checked>";} else {echo ">";}
-			echo $vcpt."</li>";
+			echo strtoupper(substr($vcpt,0,1)).substr($vcpt,1,strlen($vcpt))."</li>";
 		}
 		echo "</ul>";
-	}
+
+		// archive type selection for above content sidebar
+		$vgetarchives = fcs_get_option('fcs_abovecontent_sidebar_archives');
+		if (strstr($vgetarchives,',')) {$varchivecontexts = explode(',',$vgetarchives);}
+		else {$varchivecontexts[0] = $vgetarchives;}
+		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
+		echo __('Archives','csidebars').": </li>";
+		foreach ($varchives as $varchive => $vlabel) {
+			echo "<li style='display:inline-block; margin:0 5px;'>";
+			echo "<input type='checkbox' name='fcs_abovecontent_archive_".$varchive."' value='yes'";
+			if (in_array($varchive,$varchivecontexts)) {echo " checked>";} else {echo ">";}
+			echo $vlabel."</li>";
+		}
+		echo "</ul>";
+
+		// context type selection for above content sidebar
+		$vgetcontexts = fcs_get_option('fcs_abovecontent_sidebar_pages');
+		if (strstr($vgetcontexts,',')) {$vpagecontexts = explode(',',$vgetcontexts);}
+		else {$vpagecontexts[0] = $vgetcontexts;}
+		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
+		echo __('Special','csidebars').": </li>";
+		foreach ($vcontexts as $vcontext => $vlabel) {
+			echo "<li style='display:inline-block; margin:0 5px;'>";
+			echo "<input type='checkbox' name='fcs_abovecontent_pagetype_".$vcontext."' value='yes'";
+			if (in_array($vcontext,$vpagecontexts)) {echo " checked>";} else {echo ">";}
+			echo $vlabel."</li>";
+		}
+		echo "</ul><br>";
+
 	echo "</td></tr>";
 
 	echo "<tr><td><b>".__('Below Content Sidebar','csidebars')."</b></td><td width='10'></td>";
@@ -620,7 +733,7 @@ function fcs_options_page() {
 	echo "<td class='small'>".__('Priority','csidebars').": </td>";
 	echo "<td><input type='text' class='small' name='fcs_belowcontent_priority' size='2' style='width:35px;' value='".fcs_get_option('fcs_belowcontent_priority')."'></td>";
 	echo "<td class='small'>".__('Logged In','csidebars').": </td>";
-	echo "<td><select name='fcs_belowcontent_fallback'>";
+	echo "<td><select name='fcs_belowcontent_fallback' class='select'>";
 		$vfallback = fcs_get_option('fcs_belowcontent_fallback');
 		foreach ($vfallbackoptions as $vkey => $vlabel) {
 			echo "<option value='".$vkey."'";
@@ -629,28 +742,61 @@ function fcs_options_page() {
 		}
 	echo "</select></td></tr>";
 
-	echo "<tr><td align='center'><table><tr><td><td class='small'>".__('Disable','csidebars').": </td>";
+	echo "<tr><td align='center' style='vertical-align:top;'>";
+	echo "<div style='text-align:right;'>Output Sidebar for:</div>";
+	echo "<table style='margin-top:20px;'><tr><td><td class='small'>".__('Disable','csidebars').": </td>";
 	echo "<td><input type='checkbox' name='fcs_belowcontent_disable' value='yes'";
 	if (fcs_get_option('fcs_belowcontent_disable') == 'yes') {echo " checked";}
 	echo "></td></tr></table></td><td width='10'></td>";
 
-	// post type selection for below content sidebar
-	$vgetcpts = fcs_get_option('fcs_belowcontent_sidebar_cpts');
-	if (strstr($vgetcpts,',')) {$vbelowcpts = explode(',',$vgetcpts);}
-	else {$vbelowcpts[0] = $vgetcpts;}
+	echo "<td align='left' colspan='6' class='small'>";
 
-	echo "<td align='left' colspan='6'>";
-	if (count($vcpts) > 0) {
-		echo "<ul><li style='display:inline-block; margin:0 10px 0 0;'>".__('Output on','csidebars').": </li>";
+		// post type selection for below content sidebar
+		$vgetcpts = fcs_get_option('fcs_belowcontent_sidebar_cpts');
+		if (strstr($vgetcpts,',')) {$vbelowcpts = explode(',',$vgetcpts);}
+		else {$vbelowcpts[0] = $vgetcpts;}
+		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 10px 0 0;'>";
+		echo __('Singular','csidebars').": </li>";
 		foreach ($vcpts as $vcpt) {
 			echo "<li style='display:inline-block; margin:0 10px;'>";
 			echo "<input type='checkbox' name='fcs_belowcontent_posttype_".$vcpt."' value='yes'";
 			if (in_array($vcpt,$vbelowcpts)) {echo " checked>";} else {echo ">";}
-			echo $vcpt."</li>";
+			echo strtoupper(substr($vcpt,0,1)).substr($vcpt,1,strlen($vcpt))."</li>";
 		}
 		echo "</ul>";
-	}
+
+		// archive type selection for below content sidebar
+		$vgetarchives = fcs_get_option('fcs_belowcontent_sidebar_archives');
+		if (strstr($vgetarchives,',')) {$varchivecontexts = explode(',',$vgetarchives);}
+		else {$varchivecontexts[0] = $vgetarchives;}
+		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
+		echo __('Archives','csidebars').": </li>";
+		foreach ($varchives as $varchive => $vlabel) {
+			echo "<li style='display:inline-block; margin:0 5px;'>";
+			echo "<input type='checkbox' name='fcs_belowcontent_archive_".$varchive."' value='yes'";
+			if (in_array($varchive,$varchivecontexts)) {echo " checked>";} else {echo ">";}
+			echo $vlabel."</li>";
+		}
+		echo "</ul>";
+
+		// context type selection for below content sidebar
+		$vgetcontexts = fcs_get_option('fcs_belowcontent_sidebar_pages');
+		if (strstr($vgetcontexts,',')) {$vpagecontexts = explode(',',$vgetcontexts);}
+		else {$vpagecontexts[0] = $vgetcontexts;}
+		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
+		echo __('Special','csidebars').": </li>";
+		foreach ($vcontexts as $vcontext => $vlabel) {
+			echo "<li style='display:inline-block; margin:0 5px;'>";
+			echo "<input type='checkbox' name='fcs_belowcontent_pagetype_".$vcontext."' value='yes'";
+			if (in_array($vcontext,$vpagecontexts)) {echo " checked>";} else {echo ">";}
+			echo $vlabel."</li>";
+		}
+		echo "</ul><br>";
+
 	echo "</td></tr>";
+
+	// 1.4.5: removed unneeded output and hide options from login sidebar
+	$vfallbackoptions = array('fallback' => __('Fallback','csidebars'), 'nooutput' => __('No Output','bioship'));
 
 	echo "<tr><td><b>".__('Login Sidebar','csidebars')."</b></td><td width='10'></td>";
 	echo "<td class='small'>".__('Hook','csidebars').": </td>";
@@ -658,7 +804,7 @@ function fcs_options_page() {
 	echo "<td class='small'>".__('Priority','csidebars').": </td>";
 	echo "<td><input type='text' class='small' name='fcs_loginsidebar_priority' size='2' style='width:35px;' value='".fcs_get_option('fcs_loginsidebar_priority')."'></td>";
 	echo "<td class='small'>".__('Logged In','csidebars').": </td>";
-	echo "<td><select name='fcs_loginsidebar_fallback'>";
+	echo "<td><select name='fcs_loginsidebar_fallback' class='select'>";
 		$vfallback = fcs_get_option('fcs_loginsidebar_fallback');
 		foreach ($vfallbackoptions as $vkey => $vlabel) {
 			echo "<option value='".$vkey."'";
@@ -667,28 +813,57 @@ function fcs_options_page() {
 		}
 	echo "</select></td></tr>";
 
-
-	echo "<tr><td align='center'><table><tr><td class='small'>".__('Disable','csidebars').": </td>";
+	echo "<tr><td align='center' style='vertical-align:top;'>";
+	echo "<div style='text-align:right;'>Output Sidebar for:</div>";
+	echo "<table style='margin-top:20px;'><tr><td><td class='small'>".__('Disable','csidebars').": </td>";
 	echo "<td><input type='checkbox' name='fcs_loginsidebar_disable' value='yes'";
 	if (fcs_get_option('fcs_loginsidebar_disable') == 'yes') {echo " checked";}
 	echo "></td></tr></table></td><td width='10'></td>";
 
-	// post type selection for login sidebar
-	$vgetcpts = fcs_get_option('fcs_login_sidebar_cpts');
-	if (strstr($vgetcpts,',')) {$vlogincpts = explode(',',$vgetcpts);}
-	else {$vlogincpts[0] = $vgetcpts;}
+	echo "<td align='left' colspan='6' class='small'>";
 
-	echo "<td align='left' colspan='6'>";
-	if (count($vcpts) > 0) {
-		echo "<ul><li style='display:inline-block; margin:0 10px 0 0;'>".__('Output on','csidebars').": </li>";
+		// post type selection for login sidebar
+		$vgetcpts = fcs_get_option('fcs_login_sidebar_cpts');
+		if (strstr($vgetcpts,',')) {$vlogincpts = explode(',',$vgetcpts);}
+		else {$vlogincpts[0] = $vgetcpts;}
+		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 10px 0 0;'>";
+		echo __('Singular','csidebars').": </li>";
 		foreach ($vcpts as $vcpt) {
 			echo "<li style='display:inline-block; margin:0 10px;'>";
 			echo "<input type='checkbox' name='fcs_login_posttype_".$vcpt."' value='yes'";
 			if (in_array($vcpt,$vlogincpts)) {echo " checked>";} else {echo ">";}
-			echo $vcpt."</li>";
+			echo strtoupper(substr($vcpt,0,1)).substr($vcpt,1,strlen($vcpt))."</li>";
 		}
 		echo "</ul>";
-	}
+
+		// archive type selection for login sidebar
+		$vgetarchives = fcs_get_option('fcs_login_sidebar_archives');
+		if (strstr($vgetarchives,',')) {$varchivecontexts = explode(',',$vgetarchives);}
+		else {$varchivecontexts[0] = $vgetarchives;}
+		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
+		echo __('Archives','csidebars').": </li>";
+		foreach ($varchives as $varchive => $vlabel) {
+			echo "<li style='display:inline-block; margin:0 5px;'>";
+			echo "<input type='checkbox' name='fcs_login_archive_".$varchive."' value='yes'";
+			if (in_array($varchive,$varchivecontexts)) {echo " checked>";} else {echo ">";}
+			echo $vlabel."</li>";
+		}
+		echo "</ul>";
+
+		// context type selection for login sidebar
+		$vgetcontexts = fcs_get_option('fcs_login_sidebar_pages');
+		if (strstr($vgetcontexts,',')) {$vpagecontexts = explode(',',$vgetcontexts);}
+		else {$vpagecontexts[0] = $vgetcontexts;}
+		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
+		echo __('Special','csidebars').": </li>";
+		foreach ($vcontexts as $vcontext => $vlabel) {
+			echo "<li style='display:inline-block; margin:0 5px;'>";
+			echo "<input type='checkbox' name='fcs_login_pagetype_".$vcontext."' value='yes'";
+			if (in_array($vcontext,$vpagecontexts)) {echo " checked>";} else {echo ">";}
+			echo $vlabel."</li>";
+		}
+		echo "</ul><br>";
+
 	echo "</td></tr>";
 
 	echo "<tr><td><b>".__('Logged In Sidebar','csidebars')."</b></td><td width='10'></td>";
@@ -696,43 +871,94 @@ function fcs_options_page() {
 	echo "<td><input type='text' class='small' name='fcs_membersidebar_hook' size='20' value='".fcs_get_option('fcs_membersidebar_hook')."'></td>";
 	echo "<td class='small'>".__('Priority','csidebars').": </td>";
 	echo "<td><input type='text' class='small' name='fcs_membersidebar_priority' size='2' style='width:35px;' value='".fcs_get_option('fcs_membersidebar_priority')."'></td>";
-	echo "<td align='center' colspan='2'>(".__('logged in fallback','csidebars').")</td></tr>";
+	echo "<td>".__('Mode','csidebars').": </td>";
+	// 1.4.5: added member sidebar mode selection
+	echo "<td><select name='fcs_membersidebar_mode' class='select'>";
+	$vfallback = fcs_get_option('fcs_membersidebar_mode');
+	$vfallbackoptions = array(
+		'fallback' => __('Fallback','csidebars'), 'standalone' => __('Standalone','csidebars'), 'both' => __('Both','csidebars')
+	);
+	foreach ($vfallbackoptions as $vkey => $vlabel) {
+		echo "<option value='".$vkey."'";
+		if ($vfallback == $vkey) {echo " selected='selected'";}
+		echo ">".$vlabel."</option>";
+	}
+	echo "</select></td></tr>";
 
-	echo "<tr><td align='center'><table><tr><td class='small'>".__('Disable','csidebars').": </td>";
+	echo "<tr><td align='center' style='vertical-align:top;'>";
+	echo "<div style='text-align:right;'>Output Sidebar for:</div>";
+	echo "<table style='margin-top:20px;'><tr><td><td class='small'>".__('Disable','csidebars').": </td>";
 	echo "<td><input type='checkbox' name='fcs_membersidebar_disable' value='yes'";
 	if (fcs_get_option('fcs_membersidebar_disable') == 'yes') {echo " checked";}
 	echo "></td></tr></table></td><td width='10'></td>";
 
-	// post type selection for member sidebar
-	$vgetcpts = fcs_get_option('fcs_member_sidebar_cpts');
-	if (strstr($vgetcpts,',')) {$vmembercpts = explode(',',$vgetcpts);}
-	else {$vmembercpts[0] = $vgetcpts;}
+	echo "<td align='left' colspan='6' class='small'>";
 
-	echo "<td align='left' colspan='6'>";
-	if (count($vcpts) > 0) {
-		echo "<ul><li style='display:inline-block; margin:0 10px 0 0;'>".__('Output on','csidebars').": </li>";
+		// post type selection for member sidebar
+		$vgetcpts = fcs_get_option('fcs_member_sidebar_cpts');
+		if (strstr($vgetcpts,',')) {$vmembercpts = explode(',',$vgetcpts);}
+		else {$vmembercpts[0] = $vgetcpts;}
+		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 10px 0 0;'>";
+		echo __('Singular','csidebars').": </li>";
 		foreach ($vcpts as $vcpt) {
 			echo "<li style='display:inline-block; margin:0 10px;'>";
 			echo "<input type='checkbox' name='fcs_member_posttype_".$vcpt."' value='yes'";
 			if (in_array($vcpt,$vmembercpts)) {echo " checked>";} else {echo ">";}
-			echo $vcpt."</li>";
+			echo strtoupper(substr($vcpt,0,1)).substr($vcpt,1,strlen($vcpt))."</li>";
 		}
 		echo "</ul>";
+
+		// archive type selection for member sidebar
+		$vgetarchives = fcs_get_option('fcs_member_sidebar_archives');
+		if (strstr($vgetarchives,',')) {$varchivecontexts = explode(',',$vgetarchives);}
+		else {$varchivecontexts[0] = $vgetarchives;}
+		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
+		echo __('Archives','csidebars').": </li>";
+		foreach ($varchives as $varchive => $vlabel) {
+			echo "<li style='display:inline-block; margin:0 5px;'>";
+			echo "<input type='checkbox' name='fcs_member_archive_".$varchive."' value='yes'";
+			if (in_array($varchive,$varchivecontexts)) {echo " checked>";} else {echo ">";}
+			echo $vlabel."</li>";
 		}
+		echo "</ul>";
+
+		// context type selection for member sidebar
+		$vgetcontexts = fcs_get_option('fcs_member_sidebar_pages');
+		if (strstr($vgetcontexts,',')) {$vpagecontexts = explode(',',$vgetcontexts);}
+		else {$vpagecontexts[0] = $vgetcontexts;}
+		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
+		echo __('Special','csidebars').": </li>";
+		foreach ($vcontexts as $vcontext => $vlabel) {
+			echo "<li style='display:inline-block; margin:0 5px;'>";
+			echo "<input type='checkbox' name='fcs_member_pagetype_".$vcontext."' value='yes'";
+			if (in_array($vcontext,$vpagecontexts)) {echo " checked>";} else {echo ">";}
+			echo $vlabel."</li>";
+		}
+		echo "</ul>";
+
 	echo "</td></tr>";
 
-	echo "</table><br>";
-	echo "(".__('Ticked Fallbacks show Fallback Sidebar instead for Logged In Users, eg. Members Area Links.','csidebars').")<br><br>";
+	echo "</table>";
+	echo "(".__('Sidebar with Fallbacks show Logged In Sidebar instead for Logged In Users, eg. Members Area Links.','csidebars').")<br><br>";
 
 	// 1.3.5: add options for widget text/title shortcodes
-	echo "<h3>".__('Widget Shortcodes','csidebars')."</h3>";
+	// 1.4.5: added option for shortcodes in excerpts
+	echo "<h3>".__('Shortcode Processing','csidebars')."</h3>";
 	echo "<table><tr><td><b>".__('Process Shortcodes in Widget Text','csidebars')."</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_widget_text_shortcodes' value='yes'";
 	if (fcs_get_option('fcs_widget_text_shortcodes') == 'yes') {echo " checked";}
 	echo "></td><td width='30'></td>";
-	echo "<td><b>".__('Process Shortcodes in Widget Titles','csidebars')."</b></td><td width='10'></td>";
+	echo "<td><b>".__('Process Shortcodes in Excerpts','csidebars')."</b></td><td width='10'></td>";
+	echo "<td><input type='checkbox' name='fcs_excerpt_shortcodes' value='yes'";
+	if (fcs_get_option('fcs_excerpt_shortcodes') == 'yes') {echo " checked";}
+	echo "></td></tr>";
+	echo "<tr><td><b>".__('Process Shortcodes in Widget Titles','csidebars')."</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_widget_title_shortcodes' value='yes'";
 	if (fcs_get_option('fcs_widget_title_shortcodes') == 'yes') {echo " checked";}
+	echo "></td><td width='30'></td>";
+	echo "<td><b>".__('Shortcode Sidebars in Excerpts','csidebars')."</b></td><td width='10'></td>";
+	echo "<td><input type='checkbox' name='fcs_sidebars_in_excerpts' value='yes'";
+	if (fcs_get_option('fcs_sidebars_in_excerpts') == 'yes') {echo " checked";}
 	echo "></td></tr></table><br>";
 
 	echo "<h3>".__('Shortcode Sidebars','csidebars')."</h3>";
@@ -847,14 +1073,21 @@ function fcs_options_page() {
 	$vdefaultcss = file_get_contents(dirname(__FILE__).'/content-default.css');
 	$vcssfile = file_get_contents(dirname(__FILE__).'/content-sidebars.css');
 	$vsavedcss = fcs_get_option('fcs_dynamic_css');
+	// 1.9.9: added direct URL loading as new default
+	$vcssmode = fcs_get_option('fcs_css_mode');
+	if ($vcssmode == 'dynamic') {$vcssmode = 'direct';}
 	echo "<tr><td colspan='3'><table>";
-		echo "<tr><td><b>".__('CSS Mode','csidebars')."</b>:</td><td width='10'></td>";
-		echo "<td><input type='radio' name='fcs_css_mode' value='default'";
-		if (fcs_get_option('fcs_css_mode') == 'default') {echo " checked";}
-		echo "> ".__('Default','csidebars')." (use content-sidebars.css) </td><td width='10'></td>";
-		echo "<td><input type='radio' name='fcs_css_mode' value='dynamic'";
-		if (fcs_get_option('fcs_css_mode') == 'dynamic') {echo " checked";}
-		echo "> ".__('Dynamic CSS (below)','csidebars')."</td></tr></table><br>";
+		echo "<tr><td style='vertical-align:top;'><b>".__('CSS Mode','csidebars')."</b>:<br>";
+		echO __('Enqueues','csidebars').":</td><td width='20'></td>";
+		echo "<td align='center'><input type='radio' name='fcs_css_mode' value='default'";
+		if ($vcssmode == 'default') {echo " checked";}
+		echo "> ".__('Default (Static)','csidebars')."<br>content-sidebars.css</td><td width='20'></td>";
+		echo "<td align='center'><input type='radio' name='fcs_css_mode' value='adminajax'";
+		if ($vcssmode == 'adminajax') {echo " checked";}
+		echo "> ".__('Dynamic (indirect)','csidebars')."<br>".__('via','csidebars')." admin-ajax.php</td><td width='20'></td>";
+		echo "<td align='center'><input type='radio' name='fcs_css_mode' value='direct'";
+		if ($vcssmode == 'direct') {echo " checked";}
+		echo "> ".__('Dynamic (direct)','csidebars')."<br>content-sidebars-css.php</tr></table><br>";
 	echo "</td></tr>";
 
 	echo "<tr><td colspan='3'><b>".__('Dynamic CSS','csidebars')."</b>:<br>";
@@ -879,14 +1112,15 @@ function fcs_options_page() {
 	echo "<textarea id='cssfile' style='display:none'>".$vcssfile."</textarea>";
 	echo "<textarea id='savedcss' style='display:none'>".$vsavedcss."</textarea>";
 
-	echo "<br><h4>".__('CSS ID and Class Reference','csidebars').":</h4><br>
-	<table cellpadding='5' cellspacing='5'>
+	echo "<br><h4>".__('CSS ID and Class Reference','csidebars').":</h4>";
+	echo "<table cellpadding='5' cellspacing='5'>
 	<tr><td><b>".__('Sidebar ID','csidebars')."</b></td><td><b>".__('Sidebar Class','csidebars')."</b></td>
 	<td><b>".__('Widget Class','csidebars')."</b></td><td><b>".__('Widget Title Class','csidebars')."</b></td></tr>
 	<tr><td>#abovecontentsidebar</td><td>.contentsidebar</td><td>.abovecontentwidget</td><td>.abovecontenttitle</td></tr>
 	<tr><td>#belowcontentsidebar</td><td>.contentsidebar</td><td>.belowcontentwidget</td><td>.belowcontenttitle</td></tr>
 	<tr><td>#loginsidebar</td><td>.contentsidebar</td><td>.loginwidget</td><td>.loginwidgettitle</td></tr>
 	<tr><td>* .loggedinsidebar</td><td>.contentsidebar</td><td>.loggedinwidget</td><td>.loggedinwidgettitle</td></tr>
+	<tr><td>#membersidebar</td><td>.contentsidebar</td><td>.loggedinwidget</td><td>.loggedinwidgettitle</td></tr>
 	<tr><td>#shortcodesidebar1</td><td>.shortcodesidebar</td><td>.shortcodewidget</td><td>.shortcodewidgettitle</td></tr>
 	<tr><td>#shortcodesidebar2</td><td>.shortcodesidebar</td><td>.shortcodewidget</td><td>.shortcodewidgettitle</td></tr>
 	<tr><td>#shortcodesidebar3</td><td>.shortcodesidebar</td><td>.shortcodewidget</td><td>.shortcodewidgettitle</td></tr>
@@ -894,6 +1128,9 @@ function fcs_options_page() {
 	<tr><td>#inpostsidebar2</td><td>.inpostsidebar</td><td>.inpostwidget</td><td>.inpostwidgettitle</td></tr>
 	<tr><td>#inpostsidebar3</td><td>.inpostsidebar</td><td>.inpostwidget</td><td>.inpostwidgettitle</td></tr>
 	</table>";
+
+	echo "* ".__('if logged out, the','csidebars').' .loggedoutsidebar class '.__('is also added to all sidebars on that page.','csidebars').'<br>';
+	echo __('The','csidebars').' .loggedinsidebar '.__('class is added to the Above, Below or Login sidebars on fallback,','csidebars').'<br>';
 
 	// echo "Note: For individualized widget shortcodes you can use: <a href='http://wordpress.org/plugins/amr-shortcode-any-widget/' target=_blank>Shortcode Any Widget</a><br><br>";
 	echo "</div></div>";
@@ -1137,17 +1374,47 @@ function fcs_register_dynamic_sidebars($vactive=true) {
 	}
 }
 
-// Widget Shortcodes
+// Shortcode Filters
 // -----------------
 // 1.3.5: added these widget shortcode filter options
-add_action('init','fcs_widget_shortcodes');
-function fcs_widget_shortcodes() {
+add_action('init','fcs_process_shortcodes');
+function fcs_process_shortcodes() {
+	// widget text shortcodes
 	if (fcs_get_option('fcs_widget_text_shortcodes',true)) {
 		if (!has_filter('widget_text','do_shortcode')) {add_filter('widget_text','do_shortcode');}
 	}
+	// widget title shortcodes
 	if (fcs_get_option('fcs_widget_title_shortcodes',true)) {
 		if (!has_filter('widget_title','do_shortcode')) {add_filter('widget_title','do_shortcode');}
 	}
+	// shortcodes in excerpts
+	if (fcs_get_option('fcs_excerpt_shortcodes',false)) {
+		// add_filter('wp_trim_excerpt','fcs_excerpt_with_shortcodes');
+		if (has_filter('get_the_excerpt','wp_trim_excerpt')) {
+			remove_filter('get_the_excerpt','wp_trim_excerpt');
+			add_filter('get_the_excerpt','fcs_excerpt_with_shortcodes');
+		}
+		add_shortcode('testexcerptshortcode','fcs_test_excerpts');
+		function fcs_test_excerpts() {return 'This shortcode will display in excerpts now.';}
+	}
+}
+
+// Excerpts with Shortcodes
+// ------------------------
+// 1.4.5: copy of wp_trim_excerpt but with shortcodes kept
+// note: formatting is still stripped but shortcode text remains
+function fcs_excerpt_with_shortcodes($text) {
+	// for use in shortcodes to provide alternative output
+	global $doingexcerpt; $doingexcerpt = true;
+
+	$text = get_the_content('');
+	// $text = strip_shortcodes( $text ); // modification
+	$text = apply_filters( 'the_content', $text );
+	$text = str_replace(']]>', ']]&gt;', $text);
+	$excerpt_length = apply_filters( 'excerpt_length', 55 );
+	$excerpt_more = apply_filters( 'excerpt_more', ' ' . '[&hellip;]' );
+	$text = wp_trim_words( $text, $excerpt_length, $excerpt_more );
+	$doingexcerpt = false; return $text;
 }
 
 // Register Discreet Text Widget
@@ -1191,67 +1458,41 @@ function fcs_discreet_text_widget() {
 // Login Sidebar
 // -------------
 
+// Login Sidebar Setup
+// -------------------
 // 1.3.5: just enqueue and perform checks within action
 add_action('init','fcs_login_sidebar_setup');
 function fcs_login_sidebar_setup() {
 	$vloginsidebarhook = fcs_get_option('fcs_loginsidebar_hook',true);
 	$vloginsidebarpriority = fcs_get_option('fcs_loginsidebar_priority',true);
-	add_action($vloginsidebarhook,'fcs_login_sidebar',$vloginsidebarpriority);
+	add_action($vloginsidebarhook,'fcs_login_sidebar_output',$vloginsidebarpriority);
 }
+function fcs_login_sidebar_output() {echo fcs_login_sidebar();}
 
 // Login Sidebar
 // -------------
 function fcs_login_sidebar() {
 
-	global $post, $vfcsoverrides, $vfcsstate;
-	if (is_object($post)) {$vpostid = $post->ID;}
+	global $vfcsoverrides, $vfcsstate;
 	$vdisable = fcs_get_option('fcs_loginsidebar_disable');
 
-	// maybe disable if sidebar not active for this CPT
-	if (is_object($post)) {
-		$vpostid = $post->ID; $vposttype = get_post_type($vpostid);
-		$vcpts = fcs_get_option('fcs_login_sidebar_cpts',true);
-		if (strstr($vcpts,',')) {$vlogincpts = explode(',',$vcpts);}
-		else {$vlogincpts[0] = $vcpts;}
-	 	if (!in_array($vposttype,$vlogincpts)) {$vdisable = 'yes';}
-	}
+	// 1.4.5: check new page contexts
+	$vdisable = fcs_check_context($vdisable,'login');
 	$vdisable = apply_filters('fcs_loginsidebar_disable',$vdisable);
 
 	// 1.3.0: fix for option typo
 	$vfallback = fcs_get_option('fcs_loginsidebar_fallback',true);
-	if ( ($vfallback == 'nooutput') && ($vfcsstate == 'loggedin') ) {return;}
+	if ( ($vfallback == 'nooutput') && ($vfcsstate == 'loggedin') ) {return '';}
 	if ($vfallback == 'fallback') {
 		if ( ($vdisable != 'yes') && ($vfcsstate == 'loggedin') ) {
-
-			$vdisable = fcs_get_option('fcs_membersidebar_disable');
-
-			// maybe disable if sidebar not active for this CPT
-			if (is_object($post)) {
-				$vcpts = fcs_get_option('fcs_member_sidebar_cpts',true);
-				if (strstr($vcpts,',')) {$vmembercpts = explode(',',$vcpts);}
-				else {$vmembercpts[0] = $vcpts;}
-			 	if (!in_array($vposttype,$vmembercpts)) {$vdisable = 'yes';}
-			}
-			$vdisable = apply_filters('fcs_membersidebar_disable',$vdisable);
-
-			// if (get_post_meta($vpostid,'_disablemembersidebar',true) == 'yes') {$vdisable = 'yes';}
-			if (isset($vfcsoverrides['member'])) {
-				if ($vfcsoverrides['member'] == 'enable') {$vdisable = '';}
-				if ($vfcsoverrides['member'] == 'disable') {$vdisable = 'yes';}
-			}
-
-			if ($vdisable != 'yes') {
-				if (is_active_sidebar('LoggedInSidebar')) {
-					$vsidebar = '<div id="loginsidebar" class="contentsidebar loggedinsidebar">';
-					// 1.3.0: fix for logged in sidebar name
-					$vsidebar .= fcs_get_sidebar('LoggedInSidebar');
-					$vsidebar .= '</div>';
-				} else {$vsidebar = '';}
-				$vsidebar = apply_filters('fcs_login_sidebar',$vsidebar);
-				$vsidebar = apply_filters('fcs_login_sidebar_loggedin',$vsidebar);
-				echo $vsidebar;
-			}
-			return;
+			// 1.4.5: check mode and call to member sidebar function
+			$vmode = fcs_get_option('fcs_membersidebar_mode','fallback');
+			if ($vmode == 'standalone') {return '';}
+			$vsidebar = PHP_EOL.'<div id="loginsidebar" class="contentsidebar loggedinsidebar">';
+			$vsidebar .= fcs_member_sidebar();
+			$vsidebar .= '</div>'.PHP_EOL.PHP_EOL;
+			$vsidebar = apply_filters('fcs_login_sidebar_loggedin',$vsidebar);
+			return $vsidebar;
 		}
 	}
 
@@ -1264,14 +1505,66 @@ function fcs_login_sidebar() {
 	if ($vdisable != 'yes') {
 		if (is_active_sidebar('LoginSidebar')) {
 			if ($vfallback == 'hidden') {$vhidden = ' style="display:none;"';} else {$vhidden = '';}
-			$vsidebar = '<div id="loginsidebar" class="contentsidebar loggedoutsidebar"'.$vhidden.'>';
+			$vsidebar = PHP_EOL.'<div id="loginsidebar" class="contentsidebar loggedoutsidebar"'.$vhidden.'>';
 			$vsidebar .= fcs_get_sidebar('LoginSidebar');
-			$vsidebar .= '</div>';
+			$vsidebar .= '</div>'.PHP_EOL.PHP_EOL;
 		} else {$vsidebar = '';}
 		$vsidebar = apply_filters('fcs_login_sidebar',$vsidebar);
 		$vsidebar = apply_filters('fcs_login_sidebar_loggedout',$vsidebar);
-		echo $vsidebar;
+		return $vsidebar;
 	}
+	return '';
+}
+
+// --------------
+// Member Sidebar
+// --------------
+
+// Member Sidebar Setup
+// --------------------
+// 1.4.5: added member sidebar mode options
+add_action('init','fcs_member_sidebar_setup');
+function fcs_member_sidebar_setup() {
+	$vmembersidebarmode = fcs_get_option('fcs_membersidebar_mode','fallback');
+	if ( ($vmembersidebarmode == 'standalone') || ($vmembersidebarmode == 'both') ) {
+		$vmembersidebarhook = fcs_get_option('fcs_membersidebar_hook',true);
+		$vmembersidebarpriority = fcs_get_option('fcs_membersidebar_priority',true);
+		add_action($vmembersidebarhook,'fcs_member_sidebar_output',$vmembersidebarpriority);
+	}
+}
+function fcs_member_sidebar_output() {echo fcs_member_sidebar(true);}
+
+// Member Sidebar
+// --------------
+// 1.4.5: added standalone member sidebar function
+function fcs_member_sidebar($vstandalone=false) {
+
+	global $vfcsoverrides, $vfcsstate;
+	$vdisable = fcs_get_option('fcs_membersidebar_disable');
+
+	// 1.4.5: check new page contexts
+	$vdisable = fcs_check_context($vdisable,'member');
+	$vdisable = apply_filters('fcs_membersidebar_disable',$vdisable);
+
+	// if (get_post_meta($vpostid,'_disablemembersidebar',true) == 'yes') {$vdisable = 'yes';}
+	if (isset($vfcsoverrides['member'])) {
+		if ($vfcsoverrides['member'] == 'enable') {$vdisable = '';}
+		if ($vfcsoverrides['member'] == 'disable') {$vdisable = 'yes';}
+	}
+
+	if ($vdisable != 'yes') {
+		if (is_active_sidebar('LoggedInSidebar')) {
+			if ($vstandalone) {
+				// 1.3.0: fix for logged in sidebar name
+				$vsidebar = PHP_EOL.'<div id="membersidebar" class="contentsidebar loggedinsidebar">';
+				$vsidebar .= fcs_get_sidebar('LoggedInSidebar');
+				$vsidebar .= '</div>'.PHP_EOL.PHP_EOL;
+			} else {$vsidebar = fcs_get_sidebar('LoggedInSidebar');}
+		} else {$vsidebar = '';}
+		$vsidebar = apply_filters('fcs_member_sidebar',$vsidebar);
+		$vsidebar = apply_filters('fcs_member_sidebar_loggedin',$vsidebar);
+		return $vsidebar;
+	} else {return '';}
 }
 
 
@@ -1279,6 +1572,7 @@ function fcs_login_sidebar() {
 // --------------------------
 // 1.3.5: just enqueue and check disable within actions
 // 1.3.5: added filters to hooks and priorities
+// 1.4.5: change to use output function wrappers
 add_action('init','fcs_content_sidebars_setup');
 function fcs_content_sidebars_setup() {
 	$vmethod = fcs_get_option('fcs_abovebelow_method',true);
@@ -1286,12 +1580,12 @@ function fcs_content_sidebars_setup() {
 		// add to above content hook
 		$vhook = fcs_get_option('fcs_abovecontent_hook',true);
 		$vpriority = fcs_get_option('fcs_abovecontent_priority',true);
-		add_action($vhook,'fcs_add_abovecontent_sidebar',$vpriority);
+		add_action($vhook,'fcs_abovecontent_sidebar_output',$vpriority);
 
 		// add to below content hook
 		$vhook = fcs_get_option('fcs_belowcontent_hook',true);
 		$vpriority = fcs_get_option('fcs_belowcontent_priority',true);
-		add_action($vhook,'fcs_add_belowcontent_sidebar',$vpriority);
+		add_action($vhook,'fcs_belowcontent_sidebar_output',$vpriority);
 	}
 	elseif ($vmethod == 'filter') {
 		add_filter('the_content','fcs_add_content_sidebars',999);
@@ -1300,58 +1594,29 @@ function fcs_content_sidebars_setup() {
 
 // Above Content Sidebar
 // ---------------------
-function fcs_add_abovecontent_sidebar() {
+function fcs_abovecontent_sidebar_output() {echo fcs_abovecontent_sidebar();}
+function fcs_abovecontent_sidebar() {
 
-	global $post, $vfcsoverrides, $vfcsstate;
+	global $vfcsoverrides, $vfcsstate;
 	$vdisable = fcs_get_option('fcs_abovecontent_disable');
 
-	// maybe disable if sidebar not active for this CPT
-	if (is_object($post)) {
-		$vpostid = $post->ID; $vposttype = get_post_type($vpostid);
-		$vcpts = fcs_get_option('fcs_abovecontent_sidebar_cpts',true);
-		if (strstr($vcpts,',')) {$vabovecpts = explode(',',$vcpts);}
-		else {$vabovecpts[0] = $vcpts;}
-		if (!in_array($vposttype,$vabovecpts)) {$vdisable = 'yes';}
-	}
+	// 1.4.5: check new page contexts
+	$vdisable = fcs_check_context($vdisable,'abovecontent');
 	$vdisable = apply_filters('fcs_abovecontent_disable',$vdisable);
 
 	// check if logged in and fallback
 	$vfallback = fcs_get_option('fcs_abovecontent_fallback',true);
-	if ( ($vfallback == 'nooutput') && ($vfcsstate == 'loggedin') ) {return;}
+	if ( ($vfallback == 'nooutput') && ($vfcsstate == 'loggedin') ) {return '';}
 	if ($vfallback == 'fallback') {
 		if ( ($vdisable != 'yes') && ($vfcsstate == 'loggedin') ) {
-
-			$vdisable = fcs_get_option('fcs_membersidebar_disable');
-
-			// maybe disable if sidebar not active for this CPT
-			if (is_object($post)) {
-				$vcpts = fcs_get_option('fcs_member_sidebar_cpts',true);
-				if (strstr($vcpts,',')) {$vmembercpts = explode(',',$vcpts);}
-				else {$vmembercpts[0] = $vcpts;}
-			 	if (!in_array($vposttype,$vmembercpts)) {$vdisable = 'yes';}
-			}
-			$vdisable = apply_filters('fcs_membersidebar_disable',$vdisable);
-
-			// if (get_post_meta($vpostid,'_disablemembersidebar',true) == 'yes') {$vdisable = 'yes';}
-			if (isset($vfcsoverrides['member'])) {
-				if ($vfcsoverrides['member'] == 'disable') {$vdisable = 'yes';}
-				if ($vfcsoverrides['member'] == 'enable') {$vdisable = '';}
-			}
-
-			if ($vdisable != 'yes') {
-				if (is_active_sidebar('LoggedInSidebar')) {
-					$vsidebar = '<div id="abovecontentsidebar" class="contentsidebar loggedinsidebar">';
-					// 1.3.0: fix for logged in sidebar name
-					$vsidebar .= fcs_get_sidebar('LoggedInSidebar');
-					$vsidebar .= '</div>';
-				} else {$vsidebar = '';}
-
-				$vsidebar = apply_filters('fcs_member_sidebar',$vsidebar);
-				$vsidebar = apply_filters('fcs_abovecontent_sidebar',$vsidebar);
-				$vsidebar = apply_filters('fcs_abovecontent_sidebar_loggedin',$vsidebar);
-				echo $vsidebar;
-			}
-			return;
+			// 1.4.5: check mode and call to member sidebar function
+			$vmode = fcs_get_option('fcs_membersidebar_mode','fallback');
+			if ($vmode == 'standalone') {return '';}
+			$vsidebar = '<div id="abovecontentsidebar" class="contentsidebar loggedinsidebar">';
+			$vsidebar .= fcs_member_sidebar();
+			$vsidebar .= "</div>";
+			$vsidebar = apply_filters('fcs_abovecontent_sidebar_loggedin',$vsidebar);
+			return $vsidebar;
 		}
 	}
 
@@ -1364,72 +1629,44 @@ function fcs_add_abovecontent_sidebar() {
 	if ($vdisable != 'yes') {
 		if (is_active_sidebar('AboveContent')) {
 			if ($vfallback == 'hidden') {$vhidden = ' style="display:none;"';} else {$vhidden = '';}
-			$vsidebar = '<div id="abovecontentsidebar" class="contentsidebar loggedoutsidebar"'.$vhidden.'>';
+			// 1.4.5: replaced loggedout with login state variable class
+			$vsidebar = PHP_EOL.'<div id="abovecontentsidebar" class="contentsidebar '.$vfcsstate.'sidebar"'.$vhidden.'>';
 			$vsidebar .= fcs_get_sidebar('AboveContent');
-			$vsidebar .= '</div>';
+			$vsidebar .= '</div>'.PHP_EOL;
 		}
 
 		$vsidebar = apply_filters('fcs_abovecontent_sidebar',$vsidebar);
-		$vsidebar = apply_filters('fcs_abovecontent_sidebar_loggedout',$vsidebar);
-		echo $vsidebar;
+		$vsidebar = apply_filters('fcs_abovecontent_sidebar_'.$vfcsstate,$vsidebar);
+		return $vsidebar;
 	}
+	return '';
 }
 
 // Below Content Sidebar
 // ---------------------
-function fcs_add_belowcontent_sidebar() {
+function fcs_belowcontent_sidebar_output() {echo fcs_belowcontent_sidebar();}
+function fcs_belowcontent_sidebar() {
 
-	global $post, $vfcsoverrides, $vfcsstate;
+	global $vfcsoverrides, $vfcsstate;
 	$vdisable = fcs_get_option('fcs_belowcontent_disable');
 
-	// maybe disable if sidebar not active for this CPT
-	if (is_object($post)) {
-		$vpostid  = $post->ID; $vposttype = get_post_type($vpostid);
-		$vcpts = fcs_get_option('fcs_belowcontent_sidebar_cpts',true);
-		if (strstr($vcpts,',')) {$vbelowcpts = explode(',',$vcpts);}
-		else {$vbelowcpts[0] = $vcpts;}
-		if (!in_array($vposttype,$vbelowcpts)) {$vdisable = 'yes';}
-	}
+	// 1.4.5: check new page contexts
+	$vdisable = fcs_check_context($vdisable,'belowcontent');
 	$vdisable = apply_filters('fcs_belowcontent_disable',$vdisable);
 
 	// check if logged in and fall back
 	$vfallback = fcs_get_option('fcs_belowcontent_fallback',true);
-	if ( ($vfallback == 'nooutput') && ($vfcsstate == 'loggedin') ) {return;}
+	if ( ($vfallback == 'nooutput') && ($vfcsstate == 'loggedin') ) {return '';}
 	if ($vfallback == 'fallback') {
 		if ( ($vdisable != 'yes') && ($vfcsstate == 'loggedin') ) {
-
-			$vdisable = fcs_get_option('fcs_membersidebar_disable');
-
-			// maybe disable if sidebar not active for this CPT
-			if (is_object($post)) {
-				$vcpts = fcs_get_option('fcs_member_sidebar_cpts',true);
-				if (strstr($vcpts,',')) {$vmembercpts = explode(',',$vcpts);}
-				else {$vmembercpts[0] = $vcpts;}
-			 	if (!in_array($vposttype,$vmembercpts)) {$vdisable = 'yes';}
-			}
-			$vdisable = apply_filters('fcs_membersidebar_disable',$vdisable);
-
-			// if (get_post_meta($vpostid,'_disablemembersidebar',true) == 'yes') {$vdisable = 'yes';}
-			if (isset($vfcsoverrides['member'])) {
-				if ($vfcsoverrides['member'] == 'disable') {$vdisable = 'yes';}
-				elseif ($vfcsoverrides['member'] == 'enable') {$vdisable = '';}
-			}
-
-			if ($vdisable != 'yes') {
-				if (is_active_sidebar('LoggedInSidebar')) {
-					if ($vfallback == 'hidden') {$vhidden = ' style="display:none;"';} else {$vhidden = '';}
-					$vsidebar = '<div id="belowcontentsidebar" class="contentsidebar loggedinsidebar"'.$vhidden.'>';
-					// 1.3.0: fix for logged in sidebar name
-					$vsidebar .= fcs_get_sidebar('LoggedInSidebar');
-					$vsidebar .= '</div>';
-				} else {$vsidebar = '';}
-
-				$vsidebar = apply_filters('fcs_member_sidebar',$vsidebar);
-				$vsidebar = apply_filters('fcs_belowcontent_sidebar',$vsidebar);
-				$vsidebar = apply_filters('fcs_belowcontent_sidebar_loggedin',$vsidebar);
-				echo $vsidebar;
-		 	}
-		 	return;
+			// 1.4.5: check mode and call to member sidebar function
+			$vmode = fcs_get_option('fcs_membersidebar_mode','fallback');
+			if ($vmode == 'standalone') {return '';}
+			$vsidebar = PHP_EOL.'<div id="belowcontentsidebar" class="contentsidebar loggedinsidebar">';
+			$vsidebar .= fcs_member_sidebar();
+			$vsidebar .= '</div>'.PHP_EOL;
+			$vsidebar = apply_filters('fcs_belowcontent_sidebar_loggedin',$vsidebar);
+			return $vsidebar;
 		 }
 	}
 
@@ -1441,15 +1678,17 @@ function fcs_add_belowcontent_sidebar() {
 	}
 	if ($vdisable != 'yes') {
 		if (is_active_sidebar('BelowContent')) {
-			$vsidebar = '<div id="belowcontentsidebar" class="contentsidebar loggedoutsidebar">';
+			// 1.4.5: replaced loggedout with login state variable class
+			$vsidebar = PHP_EOL.'<div id="belowcontentsidebar" class="contentsidebar '.$vfcsstate.'sidebar">';
 			$vsidebar .= fcs_get_sidebar('BelowContent');
-			$vsidebar .= '</div>';
+			$vsidebar .= '</div>'.PHP_EOL;
 		} else {$vsidebar = '';}
 
 		$vsidebar = apply_filters('fcs_belowcontent_sidebar',$vsidebar);
-		$vsidebar = apply_filters('fcs_belowcontent_sidebar_loggedout',$vsidebar);
-		echo $vsidebar;
+		$vsidebar = apply_filters('fcs_belowcontent_sidebar_'.$vfcsstate,$vsidebar);
+		return $vsidebar;
 	}
+	return '';
 }
 
 // -----------------------------------
@@ -1457,13 +1696,16 @@ function fcs_add_belowcontent_sidebar() {
 // -----------------------------------
 // 1.3.5: removed code duplication (now just use above functions)
 function fcs_add_content_sidebars($vcontent) {
+	// 1.4.5: bug out if excerpting
+	global $vfcsexcerpt; if ($vfcsexcerpt) {return $vcontent;}
+
 	// above content sidebar
-	ob_start(); fcs_add_abovecontent_sidebar();
-	$vtopsidebar = ob_get_contents(); ob_end_clean();
+	// 1.4.5: use return value not output buffering
+	$vtopsidebar = fcs_add_abovecontent_sidebar();
 
 	// below content sidebar
-	ob_start(); fcs_add_belowcontent_sidebar();
-	$vbottomsidebar = ob_get_contents(); ob_end_clean();
+	// 1.4.5: use return value not output buffering
+	$vbottomsidebar = fcs_add_belowcontent_sidebar();
 
 	$vcontent = $vtopsidebar.$vcontent.$vbottomsidebar;
 	return $vcontent;
@@ -1490,9 +1732,21 @@ function fcs_shortcode_sidebar3() {return fcs_shortcode_sidebar('3');}
 // --------------------------
 // 1.3.5: replace individual functions with abstracted function
 function fcs_shortcode_sidebar($vid) {
-	global $post, $vfcsoverrides, $vfcsstate;
-	$vdisable = fcs_get_option('fcs_shortcode'.$vid.'_disable',true);
+	global $post, $vfcsoverrides, $vfcsstate, $vfcsexcerpt;
 
+	// 1.4.5: bug out if excerpting
+	if ($vfcsexcerpt) {
+		// normally we do not actually want to output shortcode sidebars in excerpts,
+		// but for flexibility in usage let us give the user the option to do so
+		$vprocess = fcs_get_option('fcs_sidebars_in_excerpts',false);
+		// (add a filter that returns true to conditionally process shortcode sidebars in excerpts)
+		$vprocess = apply_filters('shortcode_sidebars_in_excerpts',$vprocess);
+		$vprocess = apply_filters('shortcode_sidebar'.$vid.'_in_excerpts',$vprocess);
+		if (!$vprocess) {return '';}
+	}
+
+	// check if sidebar is disabled
+	$vdisable = fcs_get_option('fcs_shortcode'.$vid.'_disable',true);
 	if (is_object($post)) {
 		$vpostid = $post->ID;
 		if (get_post_meta($vpostid,'_disableshortcodesidebar'.$vid,true) == 'yes') {$vdisable = 'yes';}
@@ -1503,12 +1757,14 @@ function fcs_shortcode_sidebar($vid) {
 	}
 	if ($vdisable == 'yes') {return '';}
 
+	// check if sidebar has widgets
 	if (is_active_sidebar('ShortcodeSidebar'.$vid)) {
-		$vsidebar = '<div id="shortcodesidebar'.$vid.'" class="shortcodesidebar '.$vfcsstate.'sidebar">';
+		$vsidebar = PHP_EOL.'<div id="shortcodesidebar'.$vid.'" class="shortcodesidebar '.$vfcsstate.'sidebar">';
 		$vsidebar .= fcs_get_sidebar('ShortcodeSidebar'.$vid);
-		$vsidebar .= '</div>';
+		$vsidebar .= '</div>'.PHP_EOL;
 	} else {$vsidebar = '';}
 
+	// apply sidebar output filters
 	$vsidebar = apply_filters('fcs_shortcode_sidebar'.$vid,$vsidebar);
 	$vsidebar = apply_filters('fcs_shortcode_sidebar'.$vid.'_'.$vfcsstate,$vsidebar);
 	return $vsidebar;
@@ -1531,7 +1787,11 @@ function fcs_inpost_sidebars() {
 // ------------------
 function fcs_do_inpost_sidebars($vpostcontent) {
 
-	global $post, $vfcsoverrides, $vfcsstate;
+	global $post, $vfcsoverrides, $vfcsexcerpt, $vfcsstate;
+
+	// 1.4.5: bug out if excerpting or empty post
+	if ($vfcsexcerpt) {return $vpostcontent;}
+	if (!is_object($post)) {return $vpostcontent;}
 
 	// check for Content Marker (case insensitive)
 	$vcontentmarker = fcs_get_option('fcs_inpost_marker',true);
@@ -1543,44 +1803,42 @@ function fcs_do_inpost_sidebars($vpostcontent) {
 	$vinpostdisable3 = fcs_get_option('fcs_inpost3_disable');
 
 	// check InPost disable options
-	if (is_object($post)) {
-		$vpostid = $post->ID;
-		$vcptoptions = fcs_get_option('fcs_inpost_sidebars_cpts',true);
-		if (strstr($vcptoptions,',')) {$vinpostcpts = explode(',',$vcptoptions);}
-		else {$vinpostcpts[0] = $vcptoptions;}
-		$vinpostcpts = apply_filters('fcs_inpost_sidebars_cpts',$vinpostcpts);
+	$vpostid = $post->ID;
+	$vcptoptions = fcs_get_option('fcs_inpost_sidebars_cpts',true);
+	if (strstr($vcptoptions,',')) {$vinpostcpts = explode(',',$vcptoptions);}
+	else {$vinpostcpts[0] = $vcptoptions;}
+	$vinpostcpts = apply_filters('fcs_inpost_sidebars_cpts',$vinpostcpts);
 
-		// 1.3.5: maybe disable for specified post types
-		if (is_array($vinpostcpts)) {
-			// check current post type against CPT array
-			$vposttype = get_post_type($vpostid);
-			if (!in_array($vposttype,$vinpostcpts)) {
-				$vinpostdisable1 = 'yes'; $vinpostdisable2 = 'yes'; $vinpostdisable3 = 'yes';
-			}
-		}
-
-		// 1.3.5: allow for disable option filtering
-		$vinpostdisable1 = apply_filters('fcs_inpost1_disable',$vinpostdisable1);
-		$vinpostdisable2 = apply_filters('fcs_inpost1_disable',$vinpostdisable2);
-		$vinpostdisable3 = apply_filters('fcs_inpost1_disable',$vinpostdisable3);
-
-		// 1.3.5: check meta overrides here
-		if (isset($vfcsoverrides['inpost1'])) {
-			if ($vfcsoverrides['inpost1'] == 'disable') {$vinpostdisable1 = 'yes';}
-			if ($vfcsoverrides['inpost1'] == 'enable') {$vinpostdisable1 = '';}
-		}
-		if (isset($vfcsoverrides['inpost2'])) {
-			if ($vfcsoverrides['inpost2'] == 'disable') {$vinpostdisable2 = 'yes';}
-			if ($vfcsoverrides['inpost2'] == 'enable') {$vinpostdisable2 = '';}
-		}
-		if (isset($vfcsoverrides['inpost3'])) {
-			if ($vfcsoverrides['inpost3'] == 'disable') {$vinpostdisable3 = 'yes';}
-			if ($vfcsoverrides['inpost3'] == 'enable') {$vinpostdisable3 = '';}
+	// 1.3.5: maybe disable for specified post types
+	if (is_array($vinpostcpts)) {
+		// check current post type against CPT array
+		$vposttype = get_post_type($vpostid);
+		if (!in_array($vposttype,$vinpostcpts)) {
+			$vinpostdisable1 = 'yes'; $vinpostdisable2 = 'yes'; $vinpostdisable3 = 'yes';
 		}
 	}
+
+	// 1.3.5: allow for disable option filtering
+	$vinpostdisable1 = apply_filters('fcs_inpost1_disable',$vinpostdisable1);
+	$vinpostdisable2 = apply_filters('fcs_inpost1_disable',$vinpostdisable2);
+	$vinpostdisable3 = apply_filters('fcs_inpost1_disable',$vinpostdisable3);
+
+	// 1.3.5: check meta overrides here
+	if (isset($vfcsoverrides['inpost1'])) {
+		if ($vfcsoverrides['inpost1'] == 'disable') {$vinpostdisable1 = 'yes';}
+		if ($vfcsoverrides['inpost1'] == 'enable') {$vinpostdisable1 = '';}
+	}
+	if (isset($vfcsoverrides['inpost2'])) {
+		if ($vfcsoverrides['inpost2'] == 'disable') {$vinpostdisable2 = 'yes';}
+		if ($vfcsoverrides['inpost2'] == 'enable') {$vinpostdisable2 = '';}
+	}
+	if (isset($vfcsoverrides['inpost3'])) {
+		if ($vfcsoverrides['inpost3'] == 'disable') {$vinpostdisable3 = 'yes';}
+		if ($vfcsoverrides['inpost3'] == 'enable') {$vinpostdisable3 = '';}
+	}
+
 	// bug out if all inpost sidebars are disabled
 	if ( ($vinpostdisable1 == 'yes') && ($vinpostdisable2 == 'yes') && ($vinpostdisable3 == 'yes') ) {return $vpostcontent;}
-
 
 	// Convert marker case - 'just in case'...
 	if ($vcontentmarker == strtolower($vcontentmarker)) {
@@ -1611,7 +1869,7 @@ function fcs_do_inpost_sidebars($vpostcontent) {
 		$vcontent .= $vchunk;
 		if ( ($vcount == $vpositiona) && ($vinpostdisable1 != 'yes') ) {
 			if (is_active_sidebar('InPost1')) {
-				$vsidebar = '<div id="inpostsidebar1" class="inpostsidebar"';
+				$vsidebar = PHP_EOL.'<div id="inpostsidebar1" class="inpostsidebar"';
 				// 1.4.0: added float style option
 				$vfloat = fcs_get_option('fcs_inpost1_float',true);
 				if ($vfloat != '') {
@@ -1622,7 +1880,7 @@ function fcs_do_inpost_sidebars($vpostcontent) {
 				}
 				$vsidebar .= '>';
 				$vsidebar .= fcs_get_sidebar('InPost1');
-				$vsidebar .= '</div>';
+				$vsidebar .= '</div>'.PHP_EOL.PHP_EOL;
 			} else {$vsidebar = '';}
 			$vsidebar = apply_filters('fcs_inpost_sidebar1',$vsidebar);
 			$vsidebar = apply_filters('fcs_inpost_sidebar1_'.$vfcsstate,$vsidebar);
@@ -1630,7 +1888,7 @@ function fcs_do_inpost_sidebars($vpostcontent) {
 		}
 		elseif ( ($vcount == $vpositionb) && ($vinpostdisable2 != 'yes') ) {
 			if (is_active_sidebar('InPost2')) {
-				$vsidebar = '<div id="inpostsidebar2" class="inpostsidebar"';
+				$vsidebar = 'PHP_EOL.<div id="inpostsidebar2" class="inpostsidebar"';
 				// 1.4.0: added float style option
 				$vfloat = fcs_get_option('fcs_inpost2_float',true);
 				if ($vfloat != '') {
@@ -1641,7 +1899,7 @@ function fcs_do_inpost_sidebars($vpostcontent) {
 				}
 				$vsidebar .= '>';
 				$vsidebar .= fcs_get_sidebar('InPost2');
-				$vsidebar .= '</div>';
+				$vsidebar .= '</div>'.PHP_EOL.PHP_EOL;
 			} else {$vsidebar = '';}
 			$vsidebar = apply_filters('fcs_inpost_sidebar2',$vsidebar);
 			$vsidebar = apply_filters('fcs_inpost_sidebar2_'.$vfcsstate,$vsidebar);
@@ -1649,7 +1907,7 @@ function fcs_do_inpost_sidebars($vpostcontent) {
 		}
 		elseif ( ($vcount == $vpositionc) && ($vinpostdisable3 != 'yes') ) {
 			if (is_active_sidebar('InPost3')) {
-				$vsidebar = '<div id="inpostsidebar3" class="inpostsidebar"';
+				$vsidebar = PHP_EOL.'<div id="inpostsidebar3" class="inpostsidebar"';
 				// 1.4.0: added float style option
 				$vfloat = fcs_get_option('fcs_inpost3_float',true);
 				if ($vfloat != '') {
@@ -1660,7 +1918,7 @@ function fcs_do_inpost_sidebars($vpostcontent) {
 				}
 				$vsidebar .= '>';
 				$vsidebar .= fcs_get_sidebar('InPost3');
-				$vsidebar .= '</div>';
+				$vsidebar .= '</div>'.PHP_EOL.PHP_EOL;
 			} else {$vsidebar = '';}
 			$vsidebar = apply_filters('fcs_inpost_sidebar3',$vsidebar);
 			$vsidebar = apply_filters('fcs_inpost_sidebar3_'.$vfcsstate,$vsidebar);

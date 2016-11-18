@@ -150,6 +150,7 @@ The relevent CSS IDs and classes for the different Sidebar types and widgets are
 `#belowcontentsidebar | .contentsidebar - | .belowcontentwidget | .belowcontenttitle`
 `#loginsidebar -------| .contentsidebar - | .loginwidget -------| .loginwidgettitle`
 `* .loggedinsidebar --| .contentsidebar - | .loggedinwidget ----| .loggedinwidgettitle`
+`#membersidebar ------| .contentsidebar - | .memberwidget ------| .memberwidgettitle`
 `#shortcodesidebar1 --| .shortcodesidebar | .shortcodewidget ---| .shortcodewidgettitle`
 `#shortcodesidebar2 --| .shortcodesidebar | .shortcodewidget ---| .shortcodewidgettitle`
 `#shortcodesidebar3 --| .shortcodesidebar | .shortcodewidget ---| .shortcodewidgettitle`
@@ -159,7 +160,6 @@ The relevent CSS IDs and classes for the different Sidebar types and widgets are
 
 * if logged out, the .loggedoutsidebar is also added to all sidebars on that page.
 the .loggedinsidebar class is added to the Above, Below or Login sidebars on fallback,
-otherwise the IDs remain the same and the .loggedoutsidebar class is removed.
 
 
 = How do I set up the 'Above Content' and 'Below Content' Sidebar positioning? =
@@ -247,7 +247,7 @@ Posts which do not have enough paragraphs for that sidebar position will not out
 
 You can also set a Content Marker to split paragraphs with (default is `</p>`) and the
 priority of sidebar content filter is available for fine-tuning if you need to integrate 
-with other content fileters. Once you have decided which paragraph positions are suitable, 
+with other content filters. Once you have decided which paragraph positions are suitable, 
 go and drop some Widgets in the Sidebars on the Appearance - Widgets page. eg. Advertising 
 or AdSense blocks. (Remember there is a limit of 3 AdSense blocks per page, so take note 
 if you have them anywhere else on the page.) 
@@ -330,6 +330,11 @@ conditions extremely flexible... we leave it up to your unlimited imagination!
 
 
 == Changelog ==
+
+= 1.4.5 = 
+* Added Archive and Page Context Sidebar Display Options
+* Added optional Excerpt Shortcode Processing
+* Added Member Sidebar standalone mode option
 
 = 1.4.0 =
 * Improved Overall Plugin Logic
