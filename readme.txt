@@ -331,6 +331,10 @@ conditions extremely flexible... we leave it up to your unlimited imagination!
 
 == Changelog ==
 
+= 1.5.0 =
+* Added nonce checks for settings updates
+* Changed function prefix to fcsb
+
 = 1.4.5 = 
 * Added Archive and Page Context Sidebar Display Options
 * Added optional Excerpt Shortcode Processing
