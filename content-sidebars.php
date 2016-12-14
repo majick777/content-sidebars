@@ -5,16 +5,17 @@ Plugin Name: Content Sidebars
 Plugin URI: http://wordquest.org/plugins/content-siderbars/
 Author: Tony Hayes
 Description: Adds Flexible Dynamic Sidebars to your Content Areas without editing your theme.
-Version: 1.4.5
+Version: 1.5.0
 Author URI: http://wordquest.org/
+GitHub Plugin URI: majick777/content-sidebars
 */
 
 /*
-// Note, for disambiguation in the context of this plugin only:
-// Logged In User Sidebar = 'Member' Sidebar = 'Fallback' Sidebar
+// Note, for disambiguation, in the context of this plugin only:
+// Logged In User Sidebar = 'Member' Sidebar
 // 'Fallback' means it is displayed instead when there is a logged in user,
 // and can be activated for the AboveContent, Below Content and Login Sidebars.
-// 'Login' Sidebar === Login Widget Area for a Logged Out User
+// 'Login' Sidebar === Login Widget Area (for a Logged Out User)
 // (see readme.txt FAQ for more information.)
 
 // credit to: http://ryanpricemedia.com/2007/04/08/howto-include-wordpress-widgets-in-post-or-page-body
@@ -31,32 +32,25 @@ Author URI: http://wordquest.org/
 // -----------------
 global $wordquestplugins;
 $vslug = $vfcsslug = 'content-sidebars';
-$wordquestplugins[$vslug]['version'] = $vfcsversion = '1.4.5';
+$wordquestplugins[$vslug]['version'] = $vfcsversion = '1.5.0';
 $wordquestplugins[$vslug]['title'] = 'Content Sidebars';
-$wordquestplugins[$vslug]['namespace'] = 'fcs';
+$wordquestplugins[$vslug]['namespace'] = 'fcsb';
 $wordquestplugins[$vslug]['settings'] = 'fcs';
 // $wordquestplugins[$vslug]['wporgslug'] = 'content-sidebars';
 
-// --------------
-// Update Checker
-// --------------
-// check if wordpress.org version
-$vupdatechecker = dirname(__FILE__).'/updatechecker.php';
-if (file_exists($vupdatechecker)) {
-	include($vupdatechecker);
-	$wordquestplugins[$vslug]['wporg'] = false;
-	$vupdatecheck = new PluginUpdateChecker_2_1 (
-		'http://wordquest.org/downloads/?action=get_metadata&slug='.$vslug, __FILE__, $vslug
-	);
-} else {$wordquestplugins[$vslug]['wporg'] = true;}
+// ------------------------
+// Check for Update Checker
+// ------------------------
+// note: lack of updatechecker.php file indicates WordPress.Org SVN version
+// presence of updatechecker.php indicates site download or GitHub version
+$vfile = __FILE__; $vupdatechecker = dirname($vfile).'/updatechecker.php';
+if (!file_exists($vupdatechecker)) {$wordquestplugins[$vslug]['wporg'] = true;}
+else {include($vupdatechecker); $wordquestplugins[$vslug]['wporg'] = false;}
 
 // -----------------------------------
 // Load WordQuest Helper/Pro Functions
 // -----------------------------------
-if (is_admin()) {
-	$wordquest = dirname(__FILE__).'/wordquest.php';
-	if (file_exists($wordquest)) {include($wordquest);}
-}
+if (is_admin()) {$wordquest = dirname(__FILE__).'/wordquest.php'; if (file_exists($wordquest)) {include($wordquest);} }
 $vprofunctions = dirname(__FILE__).'/pro-functions.php';
 if (file_exists($vprofunctions)) {include($vprofunctions); $wordquestplugins[$vslug]['plan'] = 'premium';}
 else {$wordquestplugins[$vslug]['plan'] = 'free';}
@@ -64,8 +58,8 @@ else {$wordquestplugins[$vslug]['plan'] = 'free';}
 // -------------
 // Load Freemius
 // -------------
-function fcs_freemius($vslug) {
-    global $wordquestplugins, $fcs_freemius;
+function fcsb_freemius($vslug) {
+    global $wordquestplugins, $fcsb_freemius;
     $vwporg = $wordquestplugins[$vslug]['wporg'];
 	if ($wordquestplugins[$vslug]['plan'] == 'premium') {$vpremium = true;} else {$vpremium = false;}
 
@@ -77,7 +71,7 @@ function fcs_freemius($vslug) {
 		}
 	}
 
-    if (!isset($fcs_freemius)) {
+    if (!isset($fcsb_freemius)) {
         // include Freemius SDK
         if (!class_exists('Freemius')) {require_once(dirname(__FILE__).'/freemius/start.php');}
 
@@ -98,36 +92,36 @@ function fcs_freemius($vslug) {
                 // 'account'    	=> false,
             )
         );
-        $fcs_freemius = fs_dynamic_init($fcs_settings);
+        $fcsb_freemius = fs_dynamic_init($fcs_settings);
     }
-    return $fcs_freemius;
+    return $fcsb_freemius;
 }
 // initialize Freemius
-$fcs_freemius = fcs_freemius($vslug);
+$fcsb_freemius = fcsb_freemius($vslug);
 
 // Custom Freemius Connect Message
 // -------------------------------
-function fcs_freemius_connect($message, $user_first_name, $plugin_title, $user_login, $site_link, $freemius_link) {
+function fcsb_freemius_connect($message, $user_first_name, $plugin_title, $user_login, $site_link, $freemius_link) {
 	return sprintf(
 		__fs('hey-x').'<br>'.
 		__("In order to enjoy all this plugins features and functionality, %s needs to connect your user, %s at %s, to %s", 'wp-automedic'),
 		$user_first_name, '<b>'.$plugin_title.'</b>', '<b>'.$user_login.'</b>', $site_link, $freemius_link
 	);
 }
-fcs_freemius($vslug)->add_filter('connect_message', 'fcs_freemius_connect', WP_FS__DEFAULT_PRIORITY, 6);
+fcsb_freemius($vslug)->add_filter('connect_message', 'fcsb_freemius_connect', WP_FS__DEFAULT_PRIORITY, 6);
 
 // Add Admin Page
 // --------------
-if (is_admin()) {add_action('admin_menu','fcs_settings_menu',1);}
-function fcs_settings_menu() {
+if (is_admin()) {add_action('admin_menu','fcsb_settings_menu',1);}
+function fcsb_settings_menu() {
 	if (empty($GLOBALS['admin_page_hooks']['wordquest'])) {
 		$vicon = plugin_dir_url(__FILE__).'images/wordquest-icon.png'; $vposition = apply_filters('wordquest_menu_position','3');
 		add_menu_page('WordQuest Alliance', 'WordQuest', 'manage_options', 'wordquest', 'wqhelper_admin_page', $vicon, $vposition);
 	}
-	add_submenu_page('wordquest', 'Content Sidebars', 'Content Sidebars', 'manage_options', 'content-sidebars', 'fcs_options_page');
+	add_submenu_page('wordquest', 'Content Sidebars', 'Content Sidebars', 'manage_options', 'content-sidebars', 'fcsb_options_page');
 
 	// $vicon = plugin_dir_url(__FILE__).'images/icon.png';
-	// add_menu_page('Content Sidebars', 'Content Sidebars', 'manage_options', 'content-sidebars', 'fcs_options_page', $vicon, '82');
+	// add_menu_page('Content Sidebars', 'Content Sidebars', 'manage_options', 'content-sidebars', 'fcsb_options_page', $vicon, '82');
 
 	// Add icons and styling to the plugin submenu :-)
 	add_action('admin_footer','fcs_admin_javascript');
@@ -155,37 +149,37 @@ function fcs_settings_menu() {
 
 // add Appearance menu too (as relevant)
 // -----------------------
-add_action('admin_menu','fcs_theme_options_menu');
-function fcs_theme_options_menu() {
+add_action('admin_menu','fcsb_theme_options_menu');
+function fcsb_theme_options_menu() {
 	add_theme_page('Content Sidebars', 'Content Sidebars', 'manage_options', 'flexi-sidebars', 'fcs_theme_options_dummy');
 	function fcs_theme_options_dummy() {} // dummy menu item function
 }
 // appearance menu item redirect
-function fcs_theme_options_page() {
+function fcsb_theme_options_page() {
 	global $vfcsslug; wp_redirect(admin_url('admin.php').'?page='.$vfcsslug);
 }
 // trigger redirect to real admin menu item
 if (strstr($_SERVER['REQUEST_URI'],'/wp-admin/themes.php')) {
-	if (isset($_REQUEST['page'])) {if ($_REQUEST['page'] == 'flexi-sidebars') {add_action('init','fcs_theme_options_page');} }
+	if (isset($_REQUEST['page'])) {if ($_REQUEST['page'] == 'flexi-sidebars') {add_action('init','fcsb_theme_options_page');} }
 }
 
 // Load Sidebar Styles
 // -------------------
 // 1.3.5: changed to wp_enqueue_scripts hook
-add_action('wp_enqueue_scripts','fcs_queue_styles');
-function fcs_queue_styles() {
-	$vcssmode = fcs_get_option('fcs_css_mode',true);
+add_action('wp_enqueue_scripts','fcsb_queue_styles');
+function fcsb_queue_styles() {
+	$vcssmode = fcsb_get_option('fcs_css_mode',true);
 	if ($vcssmode == 'default') {
 		$vflexisidebarcss = plugins_url('content-sidebars.css', __FILE__);
 		wp_enqueue_style('flexi_content_sidebar_styles',$vflexisidebarcss);
 	}
 	elseif ($vcssmode == 'adminajax') {
-		$vversion = fcs_get_option('last_saved');
+		$vversion = fcsb_get_option('last_saved');
 		wp_enqueue_style('fcs-dynamic', admin_url('admin-ajax.php').'?action=fcs_dynamic_css', array(), $vversion); // $media
 	}
 	elseif ( ($vcssmode == 'direct') || ($vcssmode == 'dynamic') ) {
 	 	// 1.4.5: added direct URL load option as new default
-		$vversion = fcs_get_option('last_saved');
+		$vversion = fcsb_get_option('last_saved');
 		$vcssurl = plugin_dir_url(__FILE__).'content-sidebars-css.php';
 		wp_enqueue_style('fcs-dynamic', $vcssurl, array(), $vversion); // $media
 	}
@@ -193,16 +187,16 @@ function fcs_queue_styles() {
 
 // AJAX Dynamic CSS Output
 // -----------------------
-add_action('wp_ajax_fcs_dynamic_css', 'fcs_dynamic_css');
-add_action('wp_ajax_nopriv_fcs_dynamic_css', 'fcs_dynamic_css');
-function fcs_dynamic_css() {require(dirname(__FILE__).'/content-sidebars-css.php'); exit;}
+add_action('wp_ajax_fcs_dynamic_css', 'fcsb_dynamic_css');
+add_action('wp_ajax_nopriv_fcs_dynamic_css', 'fcsb_dynamic_css');
+function fcsb_dynamic_css() {require(dirname(__FILE__).'/content-sidebars-css.php'); exit;}
 
 // Widget Page Styles
 // ------------------
 // 1.4.0: style the sidebar on widget page
 if (is_admin() && ($pagenow == 'widgets.php')) {
-	add_action('admin_head','fcs_widget_page_styles');
-	function fcs_widget_page_styles() {
+	add_action('admin_head','fcsb_widget_page_styles');
+	function fcsb_widget_page_styles() {
 		echo "<style>.sidebar-content-on {background-color:#E9F0FF;} .sidebar-content-on h2 {font-size: 12pt;}
 		.sidebar-content-off {background-color:#EFF3FF;} .sidebar-content-off h2 {font-weight: normal; font-size: 10pt;}</style>";
 	}
@@ -210,8 +204,8 @@ if (is_admin() && ($pagenow == 'widgets.php')) {
 
 // Widget Page Message
 // -------------------
-add_action('widgets_admin_page','fcs_widget_page_message',11);
-function fcs_widget_page_message() {
+add_action('widgets_admin_page','fcsb_widget_page_message',11);
+function fcsb_widget_page_message() {
 	$vmessage = __('Note: Inactive Content Sidebars are listed with lowercase titles. Activate them via Content Sidebars settings.', 'csidebars');
 	echo "<div class='message'>".$vmessage."</div>";
 }
@@ -221,10 +215,10 @@ function fcs_widget_page_message() {
 // 1.3.0: added CSS Hero script workaround
 // TODO: test in combination with theme declarations?
 if ( (isset($_GET['csshero_action'])) && ($_GET['csshero_action'] == 'edit_page') ) {
-	// add_action('wp_loaded','fcs_csshero_script_dir',1);
-	function fcs_csshero_script_dir() {
-		add_filter('stylesheet_directory_uri','fcs_csshero_script_url',11,3);
-		function fcs_csshero_script_url($stylesheet_dir_uri, $stylesheet, $theme_root_uri) {
+	// add_action('wp_loaded','fcsb_csshero_script_dir',1);
+	function fcsb_csshero_script_dir() {
+		add_filter('stylesheet_directory_uri','fcsb_csshero_script_url',11,3);
+		function fcsb_csshero_script_url($stylesheet_dir_uri, $stylesheet, $theme_root_uri) {
 			$vcsshero = dirname(__FILE__);
 			if (file_exists($vcsshero.'/csshero.js')) {
 				$vcssherouri = plugin_dir_url(__FILE__);
@@ -249,19 +243,18 @@ global $vfcsoptions; $vfcsoptions = get_option('content_sidebars');
 // -------------------------
 // 1.4.5: added to better handle excerpt output
 global $vfcsexcerpt; $vfcsexcerpt = false;
-add_filter('get_the_excerpt','fcs_doing_excerpt_on',0);
-add_filter('get_the_excerpt','fcs_doing_excerpt_off',999);
-function fcs_doing_excerpt_on($vexcerpt) {global $vfcsexcerpt; $vfcsexcerpt = true; return $vexcerpt;}
-function fcs_doing_excerpt_off($vexcerpt) {global $vfcsexcerpt; $vfcsexcerpt = false; return $vexcerpt;}
+add_filter('get_the_excerpt','fcsb_doing_excerpt_on',0);
+add_filter('get_the_excerpt','fcsb_doing_excerpt_off',999);
+function fcsb_doing_excerpt_on($vexcerpt) {global $vfcsexcerpt; $vfcsexcerpt = true; return $vexcerpt;}
+function fcsb_doing_excerpt_off($vexcerpt) {global $vfcsexcerpt; $vfcsexcerpt = false; return $vexcerpt;}
 
 // set Login State
 // ---------------
 // 1.3.5: set login state once for efficiency
 global $vfcsstate;
-add_action('init','fcs_set_login_state');
-function fcs_set_login_state() {
-	global $vfcsstate;
-	$current_user = wp_get_current_user();
+add_action('init','fcsb_set_login_state');
+function fcsb_set_login_state() {
+	global $vfcsstate; $current_user = wp_get_current_user();
 	if ($current_user->exists()) {$vfcsstate = 'loggedin';}
 	else {$vfcsstate = 'loggedout';}
 }
@@ -269,8 +262,8 @@ function fcs_set_login_state() {
 // Set Pageload Context
 // --------------------
 // 1.4.5: added this once-off context checker
-add_action('wp','fcs_set_page_context');
-function fcs_set_page_context() {
+add_action('wp','fcsb_set_page_context');
+function fcsb_set_page_context() {
 	global $vfcscontext, $vfcsarchive;
 	$vfcscontext = ''; $vfcsarchive = '';
 	if (is_front_page()) {$vfcscontext = 'frontpage';}
@@ -290,8 +283,8 @@ function fcs_set_page_context() {
 
 // Get Sidebar Overrides
 // ---------------------
-add_action('init','fcs_get_overrides');
-function fcs_get_overrides() {
+add_action('init','fcsb_get_overrides');
+function fcsb_get_overrides() {
 	global $post, $vfcsoverrides;
 	if (is_object($post)) {
 		$vpostid = $post->ID;
@@ -317,7 +310,7 @@ function fcs_get_overrides() {
 
 // Get Sidebar Helper
 // ------------------
-function fcs_get_sidebar($vsidebar) {
+function fcsb_get_sidebar($vsidebar) {
 	ob_start();
 	// $index = ( is_int($vsidebar) ) ? "sidebar-$vsidebar" : sanitize_title($vsidebar);
 	// echo "***".$index."***"; // debug point
@@ -329,21 +322,21 @@ function fcs_get_sidebar($vsidebar) {
 
 // Check Context Helper
 // --------------------
-function fcs_check_context($vdisable,$vsidebar) {
+function fcsb_check_context($vdisable,$vsidebar) {
 	global $vfcscontext, $vfcsarchive;
 
 	$vdisablein = $vdisable;
 	if ($vfcscontext == 'singular') {
 		// maybe disable if sidebar not active for this CPT
 		global $post; $vpostid = $post->ID; $vposttype = get_post_type($vpostid);
-		$vcptoptions = fcs_get_option('fcs_'.$vsidebar.'_sidebar_cpts',true);
+		$vcptoptions = fcsb_get_option('fcs_'.$vsidebar.'_sidebar_cpts',true);
 		if (strstr($vcptoptions,',')) {$vactivecpts = explode(',',$vcptoptions);}
 		else {$vactivecpts[0] = $vcptoptions;}
 	 	if (!in_array($vposttype,$vactivecpts)) {$vdisable = 'yes';}
 	 	$vdebug = 'Post Type: '.$vposttype.' in '.$vcptoptions;
 	} elseif ($vfcscontext == 'archive') {
 		// maybe disable if sidebar not active for this archive
-		$varchiveoptions = fcs_get_option('fcs_'.$vsidebar.'_sidebar_archives');
+		$varchiveoptions = fcsb_get_option('fcs_'.$vsidebar.'_sidebar_archives');
 		if (strstr($varchiveoptions,',')) {$varchives = explode(',',$varchiveoptions);}
 		else {$varchives[0] = $varchiveoptions;}
 		if (!in_array('archive',$varchives)) {
@@ -352,7 +345,7 @@ function fcs_check_context($vdisable,$vsidebar) {
 		$vdebug = 'Archive: '.$vfcsarchive.' in '.$varchiveoptions;
 	} elseif ($vfcscontext != '') {
 		// maybe disable if sidebar not active for this context
-		$vpageoptions = fcs_get_option('fcs_'.$vsidebar.'_sidebar_pages');
+		$vpageoptions = fcsb_get_option('fcs_'.$vsidebar.'_sidebar_pages');
 		if (strstr($vpageoptions,',')) {$vcontexts = explode(',',$vpageoptions);}
 		else {$vcontexts[0] = $vpageoptions;}
 		if (!in_array($vfcscontext,$vcontexts)) {$vdisable = 'yes';}
@@ -374,7 +367,7 @@ function fcs_check_context($vdisable,$vsidebar) {
 // Get Plugin Option
 // -----------------
 // 1.3.5: use global options array
-function fcs_get_option($vkey,$vfilter=false) {
+function fcsb_get_option($vkey,$vfilter=false) {
 	global $vfcsoptions;
 	$vkey = str_replace('fcs_','',$vkey);
 	if (isset($vfcsoptions[$vkey])) {
@@ -416,10 +409,10 @@ if ( (get_option('fcs_abovebelow_method')) && (!get_option('content_sidebars')) 
 
 // Add Plugin Options
 // ------------------
-register_activation_hook(__FILE__,'fcs_add_options');
+register_activation_hook(__FILE__,'fcsb_add_options');
 
 // 1.3.5: use global options array
-function fcs_add_options() {
+function fcsb_add_options() {
 
 	global $vfcsoptions;
 
@@ -510,21 +503,24 @@ function fcs_add_options() {
 // Reset Options
 // -------------
 // 1.3.5: reset options function
-if ( (isset($_GET['contentsidebars'])) && ($_GET['contentsidebars'] == 'reset') ) {add_action('init','fcs_reset_options',0);}
-function fcs_reset_options() {
-	if (current_user_can('manage_options')) {delete_option('content_sidebars'); fcs_add_options();}
+if ( (isset($_GET['contentsidebars'])) && ($_GET['contentsidebars'] == 'reset') ) {add_action('init','fcsb_reset_options',0);}
+function fcsb_reset_options() {
+	if (current_user_can('manage_options')) {delete_option('content_sidebars'); fcsb_add_options();}
 }
 
 // Update Options Trigger
 // ----------------------
-if ( (isset($_POST['fcs_update_options'])) && ($_POST['fcs_update_options'] == 'yes') ) {add_action('init','fcs_update_options');}
+if ( (isset($_POST['fcs_update_options'])) && ($_POST['fcs_update_options'] == 'yes') ) {add_action('init','fcsb_update_options');}
 
 // Update Options
 // --------------
 // 1.3.5 update to use global options array
-function fcs_update_options() {
+function fcsb_update_options() {
 
 	if (!current_user_can('manage_options')) {return;}
+
+	// 1.5.0: verify nonce field
+	check_admin_referer('content_sidebars');
 
 	global $vfcsoptions;
 
@@ -593,7 +589,7 @@ function fcs_update_options() {
 
 // Options Page
 // ------------
-function fcs_options_page() {
+function fcsb_options_page() {
 
 	global $vfcsversion, $vfcsslug;
 
@@ -646,14 +642,16 @@ function fcs_options_page() {
 	echo "<div class='postbox' style='width:700px; line-height:2em;'><div class='inner' style='padding-left:20px;'>";
 	echo "<h3>".__('Extra Sidebars','csidebars')."</h3>";
 	echo "<form action='admin.php?page=".$vfcsslug."&updated=yes' method='post'>";
+	// 1.5.0: add nonce field
+	wp_nonce_field('content_sidebars');
 	echo "<input type='hidden' name='fcs_update_options' value='yes'>";
 
 	echo "<table><tr><td><b>".__('Positioning Mode','csidebars')."</b></td><td></td>";
 	echo "<td colspan='2'><input type='radio' name='fcs_abovebelow_method' value='hooks'";
-	if (fcs_get_option('fcs_abovebelow_method') == 'hooks') {echo " checked";}
+	if (fcsb_get_option('fcs_abovebelow_method') == 'hooks') {echo " checked";}
 	echo "> ".__('Use Template Action Hooks','csidebars')."</td>";
 	echo "<td colspan='4'><input type='radio' name='fcs_abovebelow_method' value='filter'";
-	if (fcs_get_option('fcs_abovebelow_method') == 'filter') {echo " checked";}
+	if (fcsb_get_option('fcs_abovebelow_method') == 'filter') {echo " checked";}
 	echo "> ".__('Use Content Filter','csidebars')."</td></tr>";
 	echo "<tr><td colspan='10'>".__('Note: Content Filter mode cannot account for the post title which is (usually) above','csidebars')." the_content!<br>";
 	echo __('So if you want a sidebar above the title you will need to use Template Hooks','csidebars')." (see readme.txt FAQ)</td></tr>";
@@ -661,12 +659,12 @@ function fcs_options_page() {
 
 	echo "<tr><td><b>".__('Above Content Sidebar','csidebars')."</b></td><td width='10'></td>";
 	echo "<td class='small'>".__('Hook','csidebars').": </td>";
-	echo "<td><input type='text' class='small' name='fcs_abovecontent_hook' size='20' value='".fcs_get_option('fcs_abovecontent_hook')."'></td>";
+	echo "<td><input type='text' class='small' name='fcs_abovecontent_hook' size='20' value='".fcsb_get_option('fcs_abovecontent_hook')."'></td>";
 	echo "<td class='small'>".__('Priority','csidebars').": </td>";
-	echo "<td><input type='text' class='small' name='fcs_abovecontent_priority' size='2' style='width:35px;' value='".fcs_get_option('fcs_abovecontent_priority')."'></td>";
+	echo "<td><input type='text' class='small' name='fcs_abovecontent_priority' size='2' style='width:35px;' value='".fcsb_get_option('fcs_abovecontent_priority')."'></td>";
 	echo "<td class='small'>".__('Logged In','csidebars').": </td>";
 	echo "<td><select name='fcs_abovecontent_fallback' class='select'>";
-		$vfallback = fcs_get_option('fcs_abovecontent_fallback');
+		$vfallback = fcsb_get_option('fcs_abovecontent_fallback');
 		foreach ($vfallbackoptions as $vkey => $vlabel) {
 			echo "<option value='".$vkey."'";
 			if ($vfallback == $vkey) {echo " selected='selected'";}
@@ -678,13 +676,13 @@ function fcs_options_page() {
 	echo "<div style='text-align:right;'>Output Sidebar for:</div>";
 	echo "<table style='margin-top:20px;'><tr><td><td class='small'>".__('Disable','csidebars').": </td>";
 	echo "<td><input type='checkbox' name='fcs_abovecontent_disable' value='yes'";
-	if (fcs_get_option('fcs_abovecontent_disable') == 'yes') {echo " checked";}
+	if (fcsb_get_option('fcs_abovecontent_disable') == 'yes') {echo " checked";}
 	echo "></td></tr></table></td><td width='10'></td>";
 
 	echo "<td align='left' colspan='6' class='small'>";
 
 		// post type selection for above content sidebars
-		$vgetcpts = fcs_get_option('fcs_abovecontent_sidebar_cpts');
+		$vgetcpts = fcsb_get_option('fcs_abovecontent_sidebar_cpts');
 		if (strstr($vgetcpts,',')) {$vabovecpts = explode(',',$vgetcpts);}
 		else {$vabovecpts[0] = $vgetcpts;}
 		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 10px 0 0;'>";
@@ -698,7 +696,7 @@ function fcs_options_page() {
 		echo "</ul>";
 
 		// archive type selection for above content sidebar
-		$vgetarchives = fcs_get_option('fcs_abovecontent_sidebar_archives');
+		$vgetarchives = fcsb_get_option('fcs_abovecontent_sidebar_archives');
 		if (strstr($vgetarchives,',')) {$varchivecontexts = explode(',',$vgetarchives);}
 		else {$varchivecontexts[0] = $vgetarchives;}
 		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
@@ -712,7 +710,7 @@ function fcs_options_page() {
 		echo "</ul>";
 
 		// context type selection for above content sidebar
-		$vgetcontexts = fcs_get_option('fcs_abovecontent_sidebar_pages');
+		$vgetcontexts = fcsb_get_option('fcs_abovecontent_sidebar_pages');
 		if (strstr($vgetcontexts,',')) {$vpagecontexts = explode(',',$vgetcontexts);}
 		else {$vpagecontexts[0] = $vgetcontexts;}
 		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
@@ -729,12 +727,12 @@ function fcs_options_page() {
 
 	echo "<tr><td><b>".__('Below Content Sidebar','csidebars')."</b></td><td width='10'></td>";
 	echo "<td class='small'>".__('Hook','csidebars').": </td>";
-	echo "<td><input type='text' class='small' name='fcs_belowcontent_hook' size='20' value='".fcs_get_option('fcs_belowcontent_hook')."'></td>";
+	echo "<td><input type='text' class='small' name='fcs_belowcontent_hook' size='20' value='".fcsb_get_option('fcs_belowcontent_hook')."'></td>";
 	echo "<td class='small'>".__('Priority','csidebars').": </td>";
-	echo "<td><input type='text' class='small' name='fcs_belowcontent_priority' size='2' style='width:35px;' value='".fcs_get_option('fcs_belowcontent_priority')."'></td>";
+	echo "<td><input type='text' class='small' name='fcs_belowcontent_priority' size='2' style='width:35px;' value='".fcsb_get_option('fcs_belowcontent_priority')."'></td>";
 	echo "<td class='small'>".__('Logged In','csidebars').": </td>";
 	echo "<td><select name='fcs_belowcontent_fallback' class='select'>";
-		$vfallback = fcs_get_option('fcs_belowcontent_fallback');
+		$vfallback = fcsb_get_option('fcs_belowcontent_fallback');
 		foreach ($vfallbackoptions as $vkey => $vlabel) {
 			echo "<option value='".$vkey."'";
 			if ($vfallback == $vkey) {echo " selected='selected'";}
@@ -746,13 +744,13 @@ function fcs_options_page() {
 	echo "<div style='text-align:right;'>Output Sidebar for:</div>";
 	echo "<table style='margin-top:20px;'><tr><td><td class='small'>".__('Disable','csidebars').": </td>";
 	echo "<td><input type='checkbox' name='fcs_belowcontent_disable' value='yes'";
-	if (fcs_get_option('fcs_belowcontent_disable') == 'yes') {echo " checked";}
+	if (fcsb_get_option('fcs_belowcontent_disable') == 'yes') {echo " checked";}
 	echo "></td></tr></table></td><td width='10'></td>";
 
 	echo "<td align='left' colspan='6' class='small'>";
 
 		// post type selection for below content sidebar
-		$vgetcpts = fcs_get_option('fcs_belowcontent_sidebar_cpts');
+		$vgetcpts = fcsb_get_option('fcs_belowcontent_sidebar_cpts');
 		if (strstr($vgetcpts,',')) {$vbelowcpts = explode(',',$vgetcpts);}
 		else {$vbelowcpts[0] = $vgetcpts;}
 		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 10px 0 0;'>";
@@ -766,7 +764,7 @@ function fcs_options_page() {
 		echo "</ul>";
 
 		// archive type selection for below content sidebar
-		$vgetarchives = fcs_get_option('fcs_belowcontent_sidebar_archives');
+		$vgetarchives = fcsb_get_option('fcs_belowcontent_sidebar_archives');
 		if (strstr($vgetarchives,',')) {$varchivecontexts = explode(',',$vgetarchives);}
 		else {$varchivecontexts[0] = $vgetarchives;}
 		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
@@ -780,7 +778,7 @@ function fcs_options_page() {
 		echo "</ul>";
 
 		// context type selection for below content sidebar
-		$vgetcontexts = fcs_get_option('fcs_belowcontent_sidebar_pages');
+		$vgetcontexts = fcsb_get_option('fcs_belowcontent_sidebar_pages');
 		if (strstr($vgetcontexts,',')) {$vpagecontexts = explode(',',$vgetcontexts);}
 		else {$vpagecontexts[0] = $vgetcontexts;}
 		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
@@ -800,12 +798,12 @@ function fcs_options_page() {
 
 	echo "<tr><td><b>".__('Login Sidebar','csidebars')."</b></td><td width='10'></td>";
 	echo "<td class='small'>".__('Hook','csidebars').": </td>";
-	echo "<td><input type='text' class='small' name='fcs_loginsidebar_hook' size='20' value='".fcs_get_option('fcs_loginsidebar_hook')."'></td>";
+	echo "<td><input type='text' class='small' name='fcs_loginsidebar_hook' size='20' value='".fcsb_get_option('fcs_loginsidebar_hook')."'></td>";
 	echo "<td class='small'>".__('Priority','csidebars').": </td>";
-	echo "<td><input type='text' class='small' name='fcs_loginsidebar_priority' size='2' style='width:35px;' value='".fcs_get_option('fcs_loginsidebar_priority')."'></td>";
+	echo "<td><input type='text' class='small' name='fcs_loginsidebar_priority' size='2' style='width:35px;' value='".fcsb_get_option('fcs_loginsidebar_priority')."'></td>";
 	echo "<td class='small'>".__('Logged In','csidebars').": </td>";
 	echo "<td><select name='fcs_loginsidebar_fallback' class='select'>";
-		$vfallback = fcs_get_option('fcs_loginsidebar_fallback');
+		$vfallback = fcsb_get_option('fcs_loginsidebar_fallback');
 		foreach ($vfallbackoptions as $vkey => $vlabel) {
 			echo "<option value='".$vkey."'";
 			if ($vfallback == $vkey) {echo " selected='selected'";}
@@ -817,13 +815,13 @@ function fcs_options_page() {
 	echo "<div style='text-align:right;'>Output Sidebar for:</div>";
 	echo "<table style='margin-top:20px;'><tr><td><td class='small'>".__('Disable','csidebars').": </td>";
 	echo "<td><input type='checkbox' name='fcs_loginsidebar_disable' value='yes'";
-	if (fcs_get_option('fcs_loginsidebar_disable') == 'yes') {echo " checked";}
+	if (fcsb_get_option('fcs_loginsidebar_disable') == 'yes') {echo " checked";}
 	echo "></td></tr></table></td><td width='10'></td>";
 
 	echo "<td align='left' colspan='6' class='small'>";
 
 		// post type selection for login sidebar
-		$vgetcpts = fcs_get_option('fcs_login_sidebar_cpts');
+		$vgetcpts = fcsb_get_option('fcsb_login_sidebar_cpts');
 		if (strstr($vgetcpts,',')) {$vlogincpts = explode(',',$vgetcpts);}
 		else {$vlogincpts[0] = $vgetcpts;}
 		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 10px 0 0;'>";
@@ -837,7 +835,7 @@ function fcs_options_page() {
 		echo "</ul>";
 
 		// archive type selection for login sidebar
-		$vgetarchives = fcs_get_option('fcs_login_sidebar_archives');
+		$vgetarchives = fcsb_get_option('fcsb_login_sidebar_archives');
 		if (strstr($vgetarchives,',')) {$varchivecontexts = explode(',',$vgetarchives);}
 		else {$varchivecontexts[0] = $vgetarchives;}
 		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
@@ -851,7 +849,7 @@ function fcs_options_page() {
 		echo "</ul>";
 
 		// context type selection for login sidebar
-		$vgetcontexts = fcs_get_option('fcs_login_sidebar_pages');
+		$vgetcontexts = fcsb_get_option('fcsb_login_sidebar_pages');
 		if (strstr($vgetcontexts,',')) {$vpagecontexts = explode(',',$vgetcontexts);}
 		else {$vpagecontexts[0] = $vgetcontexts;}
 		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
@@ -868,13 +866,13 @@ function fcs_options_page() {
 
 	echo "<tr><td><b>".__('Logged In Sidebar','csidebars')."</b></td><td width='10'></td>";
 	echo "<td class='small'>".__('Hook','csidebars').": </td>";
-	echo "<td><input type='text' class='small' name='fcs_membersidebar_hook' size='20' value='".fcs_get_option('fcs_membersidebar_hook')."'></td>";
+	echo "<td><input type='text' class='small' name='fcs_membersidebar_hook' size='20' value='".fcsb_get_option('fcs_membersidebar_hook')."'></td>";
 	echo "<td class='small'>".__('Priority','csidebars').": </td>";
-	echo "<td><input type='text' class='small' name='fcs_membersidebar_priority' size='2' style='width:35px;' value='".fcs_get_option('fcs_membersidebar_priority')."'></td>";
+	echo "<td><input type='text' class='small' name='fcs_membersidebar_priority' size='2' style='width:35px;' value='".fcsb_get_option('fcs_membersidebar_priority')."'></td>";
 	echo "<td>".__('Mode','csidebars').": </td>";
 	// 1.4.5: added member sidebar mode selection
 	echo "<td><select name='fcs_membersidebar_mode' class='select'>";
-	$vfallback = fcs_get_option('fcs_membersidebar_mode');
+	$vfallback = fcsb_get_option('fcs_membersidebar_mode');
 	$vfallbackoptions = array(
 		'fallback' => __('Fallback','csidebars'), 'standalone' => __('Standalone','csidebars'), 'both' => __('Both','csidebars')
 	);
@@ -889,13 +887,13 @@ function fcs_options_page() {
 	echo "<div style='text-align:right;'>Output Sidebar for:</div>";
 	echo "<table style='margin-top:20px;'><tr><td><td class='small'>".__('Disable','csidebars').": </td>";
 	echo "<td><input type='checkbox' name='fcs_membersidebar_disable' value='yes'";
-	if (fcs_get_option('fcs_membersidebar_disable') == 'yes') {echo " checked";}
+	if (fcsb_get_option('fcs_membersidebar_disable') == 'yes') {echo " checked";}
 	echo "></td></tr></table></td><td width='10'></td>";
 
 	echo "<td align='left' colspan='6' class='small'>";
 
 		// post type selection for member sidebar
-		$vgetcpts = fcs_get_option('fcs_member_sidebar_cpts');
+		$vgetcpts = fcsb_get_option('fcsb_member_sidebar_cpts');
 		if (strstr($vgetcpts,',')) {$vmembercpts = explode(',',$vgetcpts);}
 		else {$vmembercpts[0] = $vgetcpts;}
 		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 10px 0 0;'>";
@@ -909,7 +907,7 @@ function fcs_options_page() {
 		echo "</ul>";
 
 		// archive type selection for member sidebar
-		$vgetarchives = fcs_get_option('fcs_member_sidebar_archives');
+		$vgetarchives = fcsb_get_option('fcsb_member_sidebar_archives');
 		if (strstr($vgetarchives,',')) {$varchivecontexts = explode(',',$vgetarchives);}
 		else {$varchivecontexts[0] = $vgetarchives;}
 		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
@@ -923,7 +921,7 @@ function fcs_options_page() {
 		echo "</ul>";
 
 		// context type selection for member sidebar
-		$vgetcontexts = fcs_get_option('fcs_member_sidebar_pages');
+		$vgetcontexts = fcsb_get_option('fcsb_member_sidebar_pages');
 		if (strstr($vgetcontexts,',')) {$vpagecontexts = explode(',',$vgetcontexts);}
 		else {$vpagecontexts[0] = $vgetcontexts;}
 		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
@@ -946,36 +944,36 @@ function fcs_options_page() {
 	echo "<h3>".__('Shortcode Processing','csidebars')."</h3>";
 	echo "<table><tr><td><b>".__('Process Shortcodes in Widget Text','csidebars')."</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_widget_text_shortcodes' value='yes'";
-	if (fcs_get_option('fcs_widget_text_shortcodes') == 'yes') {echo " checked";}
+	if (fcsb_get_option('fcs_widget_text_shortcodes') == 'yes') {echo " checked";}
 	echo "></td><td width='30'></td>";
 	echo "<td><b>".__('Process Shortcodes in Excerpts','csidebars')."</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_excerpt_shortcodes' value='yes'";
-	if (fcs_get_option('fcs_excerpt_shortcodes') == 'yes') {echo " checked";}
+	if (fcsb_get_option('fcs_excerpt_shortcodes') == 'yes') {echo " checked";}
 	echo "></td></tr>";
 	echo "<tr><td><b>".__('Process Shortcodes in Widget Titles','csidebars')."</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_widget_title_shortcodes' value='yes'";
-	if (fcs_get_option('fcs_widget_title_shortcodes') == 'yes') {echo " checked";}
+	if (fcsb_get_option('fcs_widget_title_shortcodes') == 'yes') {echo " checked";}
 	echo "></td><td width='30'></td>";
 	echo "<td><b>".__('Shortcode Sidebars in Excerpts','csidebars')."</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_sidebars_in_excerpts' value='yes'";
-	if (fcs_get_option('fcs_sidebars_in_excerpts') == 'yes') {echo " checked";}
+	if (fcsb_get_option('fcs_sidebars_in_excerpts') == 'yes') {echo " checked";}
 	echo "></td></tr></table><br>";
 
 	echo "<h3>".__('Shortcode Sidebars','csidebars')."</h3>";
 
 	echo "<table><tr><td><b>".__('Sidebar','csidebars')." 1</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_shortcode1_disable' value='yes'";
-	if (fcs_get_option('fcs_shortcode1_disable') == 'yes') {echo " checked";}
+	if (fcsb_get_option('fcs_shortcode1_disable') == 'yes') {echo " checked";}
 	echo "></td><td width='10'>".__('Disable','csidebars')."</td><td width='40'></td>";
 
 	echo "<td><b>".__('Sidebar','csidebars')." 2</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_shortcode2_disable' value='yes'";
-	if (fcs_get_option('fcs_shortcode2_disable') == 'yes') {echo " checked";}
+	if (fcsb_get_option('fcs_shortcode2_disable') == 'yes') {echo " checked";}
 	echo "></td><td width='10'>".__('Disable','csidebars')."</td><td width='40'></td>";
 
 	echo "<td><b>".__('Sidebar','csidebars')." 3</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_shortcode3_disable' value='yes'";
-	if (fcs_get_option('fcs_shortcode3_disable') == 'yes') {echo " checked";}
+	if (fcsb_get_option('fcs_shortcode3_disable') == 'yes') {echo " checked";}
 	echo "></td><td width='10'>".__('Disable','csidebars')."</td></tr>";
 
 	echo "<tr><td colspan='4'>[shortcode-sidebar-1]</td><td></td>";
@@ -986,21 +984,21 @@ function fcs_options_page() {
 
 	echo "<table><tr><td><b>".__('Sidebar','csidebars')." 1</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_inpost1_disable' value='yes'";
-	if (fcs_get_option('fcs_inpost1_disable') == 'yes') {echo " checked";}
+	if (fcsb_get_option('fcs_inpost1_disable') == 'yes') {echo " checked";}
 	echo "></td><td width='10'>".__('Disable','csidebars')."</td><td width='40'></td>";
 
 	echo "<td><b>".__('Sidebar','csidebars')." 2</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_inpost2_disable' value='yes'";
-	if (fcs_get_option('fcs_inpost2_disable') == 'yes') {echo " checked";}
+	if (fcsb_get_option('fcs_inpost2_disable') == 'yes') {echo " checked";}
 	echo "></td><td width='10'>".__('Disable','csidebars')."</td><td width='40'></td>";
 
 	echo "<td><b>".__('Sidebar','csidebars')." 3</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_inpost3_disable' value='yes'";
-	if (fcs_get_option('fcs_inpost3_disable') == 'yes') {echo " checked";}
+	if (fcsb_get_option('fcs_inpost3_disable') == 'yes') {echo " checked";}
 	echo "></td><td width='10'>".__('Disable','csidebars')."</td></tr>";
 	echo "</table>";
 
-	$vcptoptions = fcs_get_option('fcs_inpost_sidebars_cpts');
+	$vcptoptions = fcsb_get_option('fcs_inpost_sidebars_cpts');
 	if (strstr($vcptoptions,',')) {$vinpostcpts = explode(',',$vcptoptions);}
 	else {$vinpostcpts[0] = $vcptoptions;}
 
@@ -1020,23 +1018,23 @@ function fcs_options_page() {
 	echo "</td>";
 	echo "<tr><td>".__('Paragraph Split Marker','csidebars').":</td>";
 	echo "<td width='10'></td>";
-	echo "<td><input type='text' size='15' style='width:110px;' name='fcs_inpost_marker' value='".fcs_get_option('fcs_inpost_marker')."'></td>";
+	echo "<td><input type='text' size='15' style='width:110px;' name='fcs_inpost_marker' value='".fcsb_get_option('fcs_inpost_marker')."'></td>";
 	echo "<td width='40'></td>";
 	echo "<td>the_content ".__('Filter Priority','csidebars').":</td><td width='10'></td>";
-	echo "<td><input type='text' size='3' style='width:40px;' name='fcs_inpost_priority' value='".fcs_get_option('fcs_inpost_priority')."'></td>";
+	echo "<td><input type='text' size='3' style='width:40px;' name='fcs_inpost_priority' value='".fcsb_get_option('fcs_inpost_priority')."'></td>";
 	echo "</tr><tr><td colspan='3' align='center'>(".__('Used to count and split paragraphs.','csidebars').")</td>";
 	echo "</tr></table>";
 
 	echo "<table><tr><td style='vertical-align:top;'>";
 		echo "<table>";
 		echo "<tr height='30'><td>".__('Insert Sidebar','csidebars')." 1 ".__('After Paragraph','csidebars')." #</td><td width='30'></td>";
-		echo "<td><input type='text' size='2' style='width:30px;' name='fcs_inpost_positiona' value='".fcs_get_option('fcs_inpost_positiona')."'></td></tr>";
+		echo "<td><input type='text' size='2' style='width:30px;' name='fcs_inpost_positiona' value='".fcsb_get_option('fcs_inpost_positiona')."'></td></tr>";
 		echo "<tr height='5'><td> </td></tr>";
 		echo "<tr height='30'><td>".__('Insert Sidebar','csidebars')." 2 ".__('After Paragraph','csidebars')." #</td><td width='30'></td>";
-		echo "<td><input type='text' size='2' style='width:30px;' name='fcs_inpost_positionb' value='".fcs_get_option('fcs_inpost_positionb')."'></td></tr>";
+		echo "<td><input type='text' size='2' style='width:30px;' name='fcs_inpost_positionb' value='".fcsb_get_option('fcs_inpost_positionb')."'></td></tr>";
 		echo "<tr height='5'><td> </td></tr>";
 		echo "<tr height='30'><td>".__('Insert Sidebar','csidebars')." 3 ".__('After Paragraph','csidebars')." #</td><td width='30'></td>";
-		echo "<td><input type='text' size='2' style='width:30px;' name='fcs_inpost_positionc' value='".fcs_get_option('fcs_inpost_positionc')."'></td>";
+		echo "<td><input type='text' size='2' style='width:30px;' name='fcs_inpost_positionc' value='".fcsb_get_option('fcs_inpost_positionc')."'></td>";
 		echo "</tr></table>";
 	echo "</td><td width='20'></td><td style='vertical-align:top;'>";
 
@@ -1046,7 +1044,7 @@ function fcs_options_page() {
 	echo "<td><select name='fcs_inpost1_float'>";
 		foreach ($vfloatoptions as $vkey => $vlabel) {
 		 	echo "<option value='".$vkey."'";
-			if (fcs_get_option('fcs_inpost1_float') == $vkey) {echo " selected='selected'";}
+			if (fcsb_get_option('fcs_inpost1_float') == $vkey) {echo " selected='selected'";}
 			echo ">".$vlabel."</option>";
 		}
 	echo "</select></td></tr><tr height='5'><td> </td></tr>";
@@ -1054,7 +1052,7 @@ function fcs_options_page() {
 	echo "<td><select name='fcs_inpost2_float'>";
 		foreach ($vfloatoptions as $vkey => $vlabel) {
 			echo "<option value='".$vkey."'";
-			if (fcs_get_option('fcs_inpost2_float') == $vkey) {echo " selected='selected'";}
+			if (fcsb_get_option('fcs_inpost2_float') == $vkey) {echo " selected='selected'";}
 			echo ">".$vlabel."</option>";
 		}
 	echo "</select></td></tr><tr height='5'><td> </td></tr>";
@@ -1062,7 +1060,7 @@ function fcs_options_page() {
 	echo "<td><select name='fcs_inpost3_float'>";
 		foreach ($vfloatoptions as $vkey => $vlabel) {
 			echo "<option value='".$vkey."'";
-			if (fcs_get_option('fcs_inpost3_float') == $vkey) {echo " selected='selected'";}
+			if (fcsb_get_option('fcs_inpost3_float') == $vkey) {echo " selected='selected'";}
 			echo ">".$vlabel."</option>";
 		}
 	echo "</select></td></tr></table>";
@@ -1072,9 +1070,9 @@ function fcs_options_page() {
 	echo "<tr><td><h3>".__('CSS Styles','csidebars')."</h3></td></tr>";
 	$vdefaultcss = file_get_contents(dirname(__FILE__).'/content-default.css');
 	$vcssfile = file_get_contents(dirname(__FILE__).'/content-sidebars.css');
-	$vsavedcss = fcs_get_option('fcs_dynamic_css');
+	$vsavedcss = fcsb_get_option('fcs_dynamic_css');
 	// 1.9.9: added direct URL loading as new default
-	$vcssmode = fcs_get_option('fcs_css_mode');
+	$vcssmode = fcsb_get_option('fcs_css_mode');
 	if ($vcssmode == 'dynamic') {$vcssmode = 'direct';}
 	echo "<tr><td colspan='3'><table>";
 		echo "<tr><td style='vertical-align:top;'><b>".__('CSS Mode','csidebars')."</b>:<br>";
@@ -1166,7 +1164,7 @@ function fcs_options_page() {
 // -------------------------
 
 // 1.3.5: added register sidebar abstract helper
-function fcs_register_sidebar($vsettings) {
+function fcsb_register_sidebar($vsettings) {
 	register_sidebar(array(
 		'name' => $vsettings['name'],
 		'id' => sanitize_title($vsettings['id']),
@@ -1181,15 +1179,15 @@ function fcs_register_sidebar($vsettings) {
 
 // 1.3.5: use widgets_init action hook instead
 // 1.4.0: declare active and inactive with different priorities
-// add_action('wp_head','fcs_register_dynamic_sidebars');
-// add_action('admin_head','fcs_register_dynamic_sidebars');
-add_action('widgets_init','fcs_register_active_sidebars',11);
-add_action('widgets_init','fcs_register_inactive_sidebars',13);
-function fcs_register_active_sidebars() {fcs_register_dynamic_sidebars(true);}
-function fcs_register_inactive_sidebars() {fcs_register_dynamic_sidebars(false);}
+// add_action('wp_head','fcsb_register_dynamic_sidebars');
+// add_action('admin_head','fcsb_register_dynamic_sidebars');
+add_action('widgets_init','fcsb_register_active_sidebars',11);
+add_action('widgets_init','fcsb_register_inactive_sidebars',13);
+function fcsb_register_active_sidebars() {fcsb_register_dynamic_sidebars(true);}
+function fcsb_register_inactive_sidebars() {fcsb_register_dynamic_sidebars(false);}
 
 // 1.3.5: register all but split active and inactive sidebars
-function fcs_register_dynamic_sidebars($vactive=true) {
+function fcsb_register_dynamic_sidebars($vactive=true) {
 
 	$vactivesidebars = array(); $vinactivesidebars = array();
 
@@ -1205,7 +1203,7 @@ function fcs_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="abovecontenttitle">',
 			'after_title' => '</div>',
 		);
-		if (fcs_get_option('fcs_abovecontent_disable') == 'yes') {
+		if (fcsb_get_option('fcs_abovecontent_disable') == 'yes') {
 			$vsidebar['name'] = strtolower($vsidebar['name']);
 			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
 		} else {$vactivesidebars[] = $vsidebar;}
@@ -1220,7 +1218,7 @@ function fcs_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="belowcontenttitle">',
 			'after_title' => '</div>',
 		);
-		if (fcs_get_option('fcs_belowcontent_disable') == 'yes') {
+		if (fcsb_get_option('fcs_belowcontent_disable') == 'yes') {
 			$vsidebar['name'] = strtolower($vsidebar['name']);
 			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
 		} else {$vactivesidebars[] = $vsidebar;}
@@ -1235,7 +1233,7 @@ function fcs_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="loginwidgettitle">',
 			'after_title' => '</div>',
 		);
-		if (fcs_get_option('fcs_loginsidebar_disable') == 'yes') {
+		if (fcsb_get_option('fcs_loginsidebar_disable') == 'yes') {
 			$vsidebar['name'] = strtolower($vsidebar['name']);
 			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
 		} else {$vactivesidebars[] = $vsidebar;}
@@ -1250,7 +1248,7 @@ function fcs_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="loggedinwidgettitle">',
 			'after_title' => '</div>',
 		);
-		if (fcs_get_option('fcs_membersidebar_disable') == 'yes') {
+		if (fcsb_get_option('fcs_membersidebar_disable') == 'yes') {
 			$vsidebar['name'] = strtolower($vsidebar['name']);
 			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
 		} else {$vactivesidebars[] = $vsidebar;}
@@ -1265,7 +1263,7 @@ function fcs_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="shortcodewidgettitle">',
 			'after_title' => '</div>',
 		);
-		if (fcs_get_option('fcs_shortcode1_disable') == 'yes') {
+		if (fcsb_get_option('fcs_shortcode1_disable') == 'yes') {
 			$vsidebar['name'] = strtolower($vsidebar['name']);
 			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
 		} else {$vactivesidebars[] = $vsidebar;}
@@ -1280,7 +1278,7 @@ function fcs_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="shortcodewidgetitle">',
 			'after_title' => '</div>',
 		);
-		if (fcs_get_option('fcs_shortcode2_disable') == 'yes') {
+		if (fcsb_get_option('fcs_shortcode2_disable') == 'yes') {
 			$vsidebar['name'] = strtolower($vsidebar['name']);
 			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
 		} else {$vactivesidebars[] = $vsidebar;}
@@ -1295,7 +1293,7 @@ function fcs_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="shortcodewidgettitle">',
 			'after_title' => '</div>',
 		);
-		if (fcs_get_option('fcs_shortcode3_disable') == 'yes') {
+		if (fcsb_get_option('fcs_shortcode3_disable') == 'yes') {
 			$vsidebar['name'] = strtolower($vsidebar['name']);
 			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
 		} else {$vactivesidebars[] = $vsidebar;}
@@ -1310,7 +1308,7 @@ function fcs_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="inpostwidgettitle">',
 			'after_title' => '</div>',
 		);
-		if (fcs_get_option('fcs_inpost1_disable') == 'yes') {
+		if (fcsb_get_option('fcs_inpost1_disable') == 'yes') {
 			$vsidebar['name'] = strtolower($vsidebar['name']);
 			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
 		} else {$vactivesidebars[] = $vsidebar;}
@@ -1325,7 +1323,7 @@ function fcs_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="inpostwidgettitle">',
 			'after_title' => '</div>',
 		);
-		if (fcs_get_option('fcs_inpost2_disable') == 'yes') {
+		if (fcsb_get_option('fcs_inpost2_disable') == 'yes') {
 			$vsidebar['name'] = strtolower($vsidebar['name']);
 			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
 		} else {$vactivesidebars[] = $vsidebar;}
@@ -1340,7 +1338,7 @@ function fcs_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="inpostwidgettitle">',
 			'after_title' => '</div>',
 		);
-		if (fcs_get_option('fcs_inpost3_disable') == 'yes') {
+		if (fcsb_get_option('fcs_inpost3_disable') == 'yes') {
 			$vsidebar['name'] = strtolower($vsidebar['name']);
 			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
 		} else {$vactivesidebars[] = $vsidebar;}
@@ -1357,7 +1355,7 @@ function fcs_register_dynamic_sidebars($vactive=true) {
 					$vwidgetcount = count($vallwidgets[strtolower($vsidebar['id'])]);
 					$vsidebar['name'] .= ' ('.$vwidgetcount.')';
 				}
-				fcs_register_sidebar($vsidebar);
+				fcsb_register_sidebar($vsidebar);
 			}
 		}
 		if ( (!$vactive) && (count($vinactivesidebars) > 0) ) {
@@ -1367,7 +1365,7 @@ function fcs_register_dynamic_sidebars($vactive=true) {
 					$vwidgetcount = count($vallwidgets[strtolower($vsidebar['id'])]);
 					$vsidebar['name'] .= ' ('.$vwidgetcount.')';
 				}
-				fcs_register_sidebar($vsidebar);
+				fcsb_register_sidebar($vsidebar);
 			}
 		}
 
@@ -1377,22 +1375,22 @@ function fcs_register_dynamic_sidebars($vactive=true) {
 // Shortcode Filters
 // -----------------
 // 1.3.5: added these widget shortcode filter options
-add_action('init','fcs_process_shortcodes');
-function fcs_process_shortcodes() {
+add_action('init','fcsb_process_shortcodes');
+function fcsb_process_shortcodes() {
 	// widget text shortcodes
-	if (fcs_get_option('fcs_widget_text_shortcodes',true)) {
+	if (fcsb_get_option('fcs_widget_text_shortcodes',true)) {
 		if (!has_filter('widget_text','do_shortcode')) {add_filter('widget_text','do_shortcode');}
 	}
 	// widget title shortcodes
-	if (fcs_get_option('fcs_widget_title_shortcodes',true)) {
+	if (fcsb_get_option('fcs_widget_title_shortcodes',true)) {
 		if (!has_filter('widget_title','do_shortcode')) {add_filter('widget_title','do_shortcode');}
 	}
 	// shortcodes in excerpts
-	if (fcs_get_option('fcs_excerpt_shortcodes',false)) {
-		// add_filter('wp_trim_excerpt','fcs_excerpt_with_shortcodes');
+	if (fcsb_get_option('fcs_excerpt_shortcodes',false)) {
+		// add_filter('wp_trim_excerpt','fcsb_excerpt_with_shortcodes');
 		if (has_filter('get_the_excerpt','wp_trim_excerpt')) {
 			remove_filter('get_the_excerpt','wp_trim_excerpt');
-			add_filter('get_the_excerpt','fcs_excerpt_with_shortcodes');
+			add_filter('get_the_excerpt','fcsb_excerpt_with_shortcodes');
 		}
 		add_shortcode('testexcerptshortcode','fcs_test_excerpts');
 		function fcs_test_excerpts() {return 'This shortcode will display in excerpts now.';}
@@ -1403,16 +1401,16 @@ function fcs_process_shortcodes() {
 // ------------------------
 // 1.4.5: copy of wp_trim_excerpt but with shortcodes kept
 // note: formatting is still stripped but shortcode text remains
-function fcs_excerpt_with_shortcodes($text) {
+function fcsb_excerpt_with_shortcodes($text) {
 	// for use in shortcodes to provide alternative output
 	global $doingexcerpt; $doingexcerpt = true;
 
 	$text = get_the_content('');
 	// $text = strip_shortcodes( $text ); // modification
-	$text = apply_filters( 'the_content', $text );
+	$text = apply_filters('the_content', $text);
 	$text = str_replace(']]>', ']]&gt;', $text);
-	$excerpt_length = apply_filters( 'excerpt_length', 55 );
-	$excerpt_more = apply_filters( 'excerpt_more', ' ' . '[&hellip;]' );
+	$excerpt_length = apply_filters('excerpt_length', 55);
+	$excerpt_more = apply_filters('excerpt_more', ' ' . '[&hellip;]');
 	$text = wp_trim_words( $text, $excerpt_length, $excerpt_more );
 	$doingexcerpt = false; return $text;
 }
@@ -1424,8 +1422,8 @@ function fcs_excerpt_with_shortcodes($text) {
 // add_shortcode('test-shortcode', 'fcs_test_shortcode');
 // function fcs_test_shortcode() {return '';}
 
-add_action('widgets_init', 'fcs_discreet_text_widget', 11);
-function fcs_discreet_text_widget() {
+add_action('widgets_init', 'fcsb_discreet_text_widget', 11);
+function fcsb_discreet_text_widget() {
 	if (!class_exists('DiscreetTextWidget')) {
 		class DiscreetTextWidget extends WP_Widget_Text {
 			function __construct() {
@@ -1461,35 +1459,35 @@ function fcs_discreet_text_widget() {
 // Login Sidebar Setup
 // -------------------
 // 1.3.5: just enqueue and perform checks within action
-add_action('init','fcs_login_sidebar_setup');
-function fcs_login_sidebar_setup() {
-	$vloginsidebarhook = fcs_get_option('fcs_loginsidebar_hook',true);
-	$vloginsidebarpriority = fcs_get_option('fcs_loginsidebar_priority',true);
-	add_action($vloginsidebarhook,'fcs_login_sidebar_output',$vloginsidebarpriority);
+add_action('init','fcsb_login_sidebar_setup');
+function fcsb_login_sidebar_setup() {
+	$vloginsidebarhook = fcsb_get_option('fcs_loginsidebar_hook',true);
+	$vloginsidebarpriority = fcsb_get_option('fcs_loginsidebar_priority',true);
+	add_action($vloginsidebarhook,'fcsb_login_sidebar_output',$vloginsidebarpriority);
 }
-function fcs_login_sidebar_output() {echo fcs_login_sidebar();}
+function fcsb_login_sidebar_output() {echo fcsb_login_sidebar();}
 
 // Login Sidebar
 // -------------
-function fcs_login_sidebar() {
+function fcsb_login_sidebar() {
 
 	global $vfcsoverrides, $vfcsstate;
-	$vdisable = fcs_get_option('fcs_loginsidebar_disable');
+	$vdisable = fcsb_get_option('fcs_loginsidebar_disable');
 
 	// 1.4.5: check new page contexts
-	$vdisable = fcs_check_context($vdisable,'login');
+	$vdisable = fcsb_check_context($vdisable,'login');
 	$vdisable = apply_filters('fcs_loginsidebar_disable',$vdisable);
 
 	// 1.3.0: fix for option typo
-	$vfallback = fcs_get_option('fcs_loginsidebar_fallback',true);
+	$vfallback = fcsb_get_option('fcs_loginsidebar_fallback',true);
 	if ( ($vfallback == 'nooutput') && ($vfcsstate == 'loggedin') ) {return '';}
 	if ($vfallback == 'fallback') {
 		if ( ($vdisable != 'yes') && ($vfcsstate == 'loggedin') ) {
 			// 1.4.5: check mode and call to member sidebar function
-			$vmode = fcs_get_option('fcs_membersidebar_mode','fallback');
+			$vmode = fcsb_get_option('fcs_membersidebar_mode','fallback');
 			if ($vmode == 'standalone') {return '';}
 			$vsidebar = PHP_EOL.'<div id="loginsidebar" class="contentsidebar loggedinsidebar">';
-			$vsidebar .= fcs_member_sidebar();
+			$vsidebar .= fcsb_member_sidebar();
 			$vsidebar .= '</div>'.PHP_EOL.PHP_EOL;
 			$vsidebar = apply_filters('fcs_login_sidebar_loggedin',$vsidebar);
 			return $vsidebar;
@@ -1506,7 +1504,7 @@ function fcs_login_sidebar() {
 		if (is_active_sidebar('LoginSidebar')) {
 			if ($vfallback == 'hidden') {$vhidden = ' style="display:none;"';} else {$vhidden = '';}
 			$vsidebar = PHP_EOL.'<div id="loginsidebar" class="contentsidebar loggedoutsidebar"'.$vhidden.'>';
-			$vsidebar .= fcs_get_sidebar('LoginSidebar');
+			$vsidebar .= fcsb_get_sidebar('LoginSidebar');
 			$vsidebar .= '</div>'.PHP_EOL.PHP_EOL;
 		} else {$vsidebar = '';}
 		$vsidebar = apply_filters('fcs_login_sidebar',$vsidebar);
@@ -1523,27 +1521,27 @@ function fcs_login_sidebar() {
 // Member Sidebar Setup
 // --------------------
 // 1.4.5: added member sidebar mode options
-add_action('init','fcs_member_sidebar_setup');
-function fcs_member_sidebar_setup() {
-	$vmembersidebarmode = fcs_get_option('fcs_membersidebar_mode','fallback');
+add_action('init','fcsb_member_sidebar_setup');
+function fcsb_member_sidebar_setup() {
+	$vmembersidebarmode = fcsb_get_option('fcs_membersidebar_mode','fallback');
 	if ( ($vmembersidebarmode == 'standalone') || ($vmembersidebarmode == 'both') ) {
-		$vmembersidebarhook = fcs_get_option('fcs_membersidebar_hook',true);
-		$vmembersidebarpriority = fcs_get_option('fcs_membersidebar_priority',true);
-		add_action($vmembersidebarhook,'fcs_member_sidebar_output',$vmembersidebarpriority);
+		$vmembersidebarhook = fcsb_get_option('fcs_membersidebar_hook',true);
+		$vmembersidebarpriority = fcsb_get_option('fcs_membersidebar_priority',true);
+		add_action($vmembersidebarhook,'fcsb_member_sidebar_output',$vmembersidebarpriority);
 	}
 }
-function fcs_member_sidebar_output() {echo fcs_member_sidebar(true);}
+function fcsb_member_sidebar_output() {echo fcsb_member_sidebar(true);}
 
 // Member Sidebar
 // --------------
 // 1.4.5: added standalone member sidebar function
-function fcs_member_sidebar($vstandalone=false) {
+function fcsb_member_sidebar($vstandalone=false) {
 
 	global $vfcsoverrides, $vfcsstate;
-	$vdisable = fcs_get_option('fcs_membersidebar_disable');
+	$vdisable = fcsb_get_option('fcs_membersidebar_disable');
 
 	// 1.4.5: check new page contexts
-	$vdisable = fcs_check_context($vdisable,'member');
+	$vdisable = fcsb_check_context($vdisable,'member');
 	$vdisable = apply_filters('fcs_membersidebar_disable',$vdisable);
 
 	// if (get_post_meta($vpostid,'_disablemembersidebar',true) == 'yes') {$vdisable = 'yes';}
@@ -1557,9 +1555,9 @@ function fcs_member_sidebar($vstandalone=false) {
 			if ($vstandalone) {
 				// 1.3.0: fix for logged in sidebar name
 				$vsidebar = PHP_EOL.'<div id="membersidebar" class="contentsidebar loggedinsidebar">';
-				$vsidebar .= fcs_get_sidebar('LoggedInSidebar');
+				$vsidebar .= fcsb_get_sidebar('LoggedInSidebar');
 				$vsidebar .= '</div>'.PHP_EOL.PHP_EOL;
-			} else {$vsidebar = fcs_get_sidebar('LoggedInSidebar');}
+			} else {$vsidebar = fcsb_get_sidebar('LoggedInSidebar');}
 		} else {$vsidebar = '';}
 		$vsidebar = apply_filters('fcs_member_sidebar',$vsidebar);
 		$vsidebar = apply_filters('fcs_member_sidebar_loggedin',$vsidebar);
@@ -1573,47 +1571,47 @@ function fcs_member_sidebar($vstandalone=false) {
 // 1.3.5: just enqueue and check disable within actions
 // 1.3.5: added filters to hooks and priorities
 // 1.4.5: change to use output function wrappers
-add_action('init','fcs_content_sidebars_setup');
-function fcs_content_sidebars_setup() {
-	$vmethod = fcs_get_option('fcs_abovebelow_method',true);
+add_action('init','fcsb_content_sidebars_setup');
+function fcsb_content_sidebars_setup() {
+	$vmethod = fcsb_get_option('fcs_abovebelow_method',true);
 	if ($vmethod == 'hooks') {
 		// add to above content hook
-		$vhook = fcs_get_option('fcs_abovecontent_hook',true);
-		$vpriority = fcs_get_option('fcs_abovecontent_priority',true);
-		add_action($vhook,'fcs_abovecontent_sidebar_output',$vpriority);
+		$vhook = fcsb_get_option('fcs_abovecontent_hook',true);
+		$vpriority = fcsb_get_option('fcs_abovecontent_priority',true);
+		add_action($vhook,'fcsb_abovecontent_sidebar_output',$vpriority);
 
 		// add to below content hook
-		$vhook = fcs_get_option('fcs_belowcontent_hook',true);
-		$vpriority = fcs_get_option('fcs_belowcontent_priority',true);
-		add_action($vhook,'fcs_belowcontent_sidebar_output',$vpriority);
+		$vhook = fcsb_get_option('fcs_belowcontent_hook',true);
+		$vpriority = fcsb_get_option('fcs_belowcontent_priority',true);
+		add_action($vhook,'fcsb_belowcontent_sidebar_output',$vpriority);
 	}
 	elseif ($vmethod == 'filter') {
-		add_filter('the_content','fcs_add_content_sidebars',999);
+		add_filter('the_content','fcsb_add_content_sidebars',999);
 	}
 }
 
 // Above Content Sidebar
 // ---------------------
-function fcs_abovecontent_sidebar_output() {echo fcs_abovecontent_sidebar();}
-function fcs_abovecontent_sidebar() {
+function fcsb_abovecontent_sidebar_output() {echo fcsb_abovecontent_sidebar();}
+function fcsb_abovecontent_sidebar() {
 
 	global $vfcsoverrides, $vfcsstate;
-	$vdisable = fcs_get_option('fcs_abovecontent_disable');
+	$vdisable = fcsb_get_option('fcs_abovecontent_disable');
 
 	// 1.4.5: check new page contexts
-	$vdisable = fcs_check_context($vdisable,'abovecontent');
+	$vdisable = fcsb_check_context($vdisable,'abovecontent');
 	$vdisable = apply_filters('fcs_abovecontent_disable',$vdisable);
 
 	// check if logged in and fallback
-	$vfallback = fcs_get_option('fcs_abovecontent_fallback',true);
+	$vfallback = fcsb_get_option('fcs_abovecontent_fallback',true);
 	if ( ($vfallback == 'nooutput') && ($vfcsstate == 'loggedin') ) {return '';}
 	if ($vfallback == 'fallback') {
 		if ( ($vdisable != 'yes') && ($vfcsstate == 'loggedin') ) {
 			// 1.4.5: check mode and call to member sidebar function
-			$vmode = fcs_get_option('fcs_membersidebar_mode','fallback');
+			$vmode = fcsb_get_option('fcs_membersidebar_mode','fallback');
 			if ($vmode == 'standalone') {return '';}
 			$vsidebar = '<div id="abovecontentsidebar" class="contentsidebar loggedinsidebar">';
-			$vsidebar .= fcs_member_sidebar();
+			$vsidebar .= fcsb_member_sidebar();
 			$vsidebar .= "</div>";
 			$vsidebar = apply_filters('fcs_abovecontent_sidebar_loggedin',$vsidebar);
 			return $vsidebar;
@@ -1631,7 +1629,7 @@ function fcs_abovecontent_sidebar() {
 			if ($vfallback == 'hidden') {$vhidden = ' style="display:none;"';} else {$vhidden = '';}
 			// 1.4.5: replaced loggedout with login state variable class
 			$vsidebar = PHP_EOL.'<div id="abovecontentsidebar" class="contentsidebar '.$vfcsstate.'sidebar"'.$vhidden.'>';
-			$vsidebar .= fcs_get_sidebar('AboveContent');
+			$vsidebar .= fcsb_get_sidebar('AboveContent');
 			$vsidebar .= '</div>'.PHP_EOL;
 		}
 
@@ -1644,26 +1642,26 @@ function fcs_abovecontent_sidebar() {
 
 // Below Content Sidebar
 // ---------------------
-function fcs_belowcontent_sidebar_output() {echo fcs_belowcontent_sidebar();}
-function fcs_belowcontent_sidebar() {
+function fcsb_belowcontent_sidebar_output() {echo fcsb_belowcontent_sidebar();}
+function fcsb_belowcontent_sidebar() {
 
 	global $vfcsoverrides, $vfcsstate;
-	$vdisable = fcs_get_option('fcs_belowcontent_disable');
+	$vdisable = fcsb_get_option('fcs_belowcontent_disable');
 
 	// 1.4.5: check new page contexts
-	$vdisable = fcs_check_context($vdisable,'belowcontent');
+	$vdisable = fcsb_check_context($vdisable,'belowcontent');
 	$vdisable = apply_filters('fcs_belowcontent_disable',$vdisable);
 
 	// check if logged in and fall back
-	$vfallback = fcs_get_option('fcs_belowcontent_fallback',true);
+	$vfallback = fcsb_get_option('fcs_belowcontent_fallback',true);
 	if ( ($vfallback == 'nooutput') && ($vfcsstate == 'loggedin') ) {return '';}
 	if ($vfallback == 'fallback') {
 		if ( ($vdisable != 'yes') && ($vfcsstate == 'loggedin') ) {
 			// 1.4.5: check mode and call to member sidebar function
-			$vmode = fcs_get_option('fcs_membersidebar_mode','fallback');
+			$vmode = fcsb_get_option('fcs_membersidebar_mode','fallback');
 			if ($vmode == 'standalone') {return '';}
 			$vsidebar = PHP_EOL.'<div id="belowcontentsidebar" class="contentsidebar loggedinsidebar">';
-			$vsidebar .= fcs_member_sidebar();
+			$vsidebar .= fcsb_member_sidebar();
 			$vsidebar .= '</div>'.PHP_EOL;
 			$vsidebar = apply_filters('fcs_belowcontent_sidebar_loggedin',$vsidebar);
 			return $vsidebar;
@@ -1680,7 +1678,7 @@ function fcs_belowcontent_sidebar() {
 		if (is_active_sidebar('BelowContent')) {
 			// 1.4.5: replaced loggedout with login state variable class
 			$vsidebar = PHP_EOL.'<div id="belowcontentsidebar" class="contentsidebar '.$vfcsstate.'sidebar">';
-			$vsidebar .= fcs_get_sidebar('BelowContent');
+			$vsidebar .= fcsb_get_sidebar('BelowContent');
 			$vsidebar .= '</div>'.PHP_EOL;
 		} else {$vsidebar = '';}
 
@@ -1695,7 +1693,7 @@ function fcs_belowcontent_sidebar() {
 // Above/Below Content - Filter Method
 // -----------------------------------
 // 1.3.5: removed code duplication (now just use above functions)
-function fcs_add_content_sidebars($vcontent) {
+function fcsb_add_content_sidebars($vcontent) {
 	// 1.4.5: bug out if excerpting
 	global $vfcsexcerpt; if ($vfcsexcerpt) {return $vcontent;}
 
@@ -1715,30 +1713,30 @@ function fcs_add_content_sidebars($vcontent) {
 // Shortcode Sidebars
 // ------------------
 // 1.3.5: just add and check disable/overrides within shortcodes
-add_action('init','fcs_sidebar_shortcodes');
-function fcs_sidebar_shortcodes() {
+add_action('init','fcsb_sidebar_shortcodes');
+function fcsb_sidebar_shortcodes() {
 	if (!is_admin()) {
-		add_shortcode('shortcode-sidebar-1','fcs_shortcode_sidebar1');
-		add_shortcode('shortcode-sidebar-2','fcs_shortcode_sidebar2');
-		add_shortcode('shortcode-sidebar-3','fcs_shortcode_sidebar3');
+		add_shortcode('shortcode-sidebar-1','fcsb_shortcode_sidebar1');
+		add_shortcode('shortcode-sidebar-2','fcsb_shortcode_sidebar2');
+		add_shortcode('shortcode-sidebar-3','fcsb_shortcode_sidebar3');
 	}
 }
 // 1.3.5: replaced individual shortcodes with abstract calls
-function fcs_shortcode_sidebar1() {return fcs_shortcode_sidebar('1');}
-function fcs_shortcode_sidebar2() {return fcs_shortcode_sidebar('2');}
-function fcs_shortcode_sidebar3() {return fcs_shortcode_sidebar('3');}
+function fcsb_shortcode_sidebar1() {return fcsb_shortcode_sidebar('1');}
+function fcsb_shortcode_sidebar2() {return fcsb_shortcode_sidebar('2');}
+function fcsb_shortcode_sidebar3() {return fcsb_shortcode_sidebar('3');}
 
 // Shortcode Sidebar Abstract
 // --------------------------
 // 1.3.5: replace individual functions with abstracted function
-function fcs_shortcode_sidebar($vid) {
+function fcsb_shortcode_sidebar($vid) {
 	global $post, $vfcsoverrides, $vfcsstate, $vfcsexcerpt;
 
 	// 1.4.5: bug out if excerpting
 	if ($vfcsexcerpt) {
 		// normally we do not actually want to output shortcode sidebars in excerpts,
 		// but for flexibility in usage let us give the user the option to do so
-		$vprocess = fcs_get_option('fcs_sidebars_in_excerpts',false);
+		$vprocess = fcsb_get_option('fcs_sidebars_in_excerpts',false);
 		// (add a filter that returns true to conditionally process shortcode sidebars in excerpts)
 		$vprocess = apply_filters('shortcode_sidebars_in_excerpts',$vprocess);
 		$vprocess = apply_filters('shortcode_sidebar'.$vid.'_in_excerpts',$vprocess);
@@ -1746,7 +1744,7 @@ function fcs_shortcode_sidebar($vid) {
 	}
 
 	// check if sidebar is disabled
-	$vdisable = fcs_get_option('fcs_shortcode'.$vid.'_disable',true);
+	$vdisable = fcsb_get_option('fcs_shortcode'.$vid.'_disable',true);
 	if (is_object($post)) {
 		$vpostid = $post->ID;
 		if (get_post_meta($vpostid,'_disableshortcodesidebar'.$vid,true) == 'yes') {$vdisable = 'yes';}
@@ -1760,7 +1758,7 @@ function fcs_shortcode_sidebar($vid) {
 	// check if sidebar has widgets
 	if (is_active_sidebar('ShortcodeSidebar'.$vid)) {
 		$vsidebar = PHP_EOL.'<div id="shortcodesidebar'.$vid.'" class="shortcodesidebar '.$vfcsstate.'sidebar">';
-		$vsidebar .= fcs_get_sidebar('ShortcodeSidebar'.$vid);
+		$vsidebar .= fcsb_get_sidebar('ShortcodeSidebar'.$vid);
 		$vsidebar .= '</div>'.PHP_EOL;
 	} else {$vsidebar = '';}
 
@@ -1774,18 +1772,18 @@ function fcs_shortcode_sidebar($vid) {
 // InPost Sidebars
 // ---------------
 
-add_action('init','fcs_inpost_sidebars');
-function fcs_inpost_sidebars() {
+add_action('init','fcsb_inpost_sidebars');
+function fcsb_inpost_sidebars() {
 	if (!is_admin()) {
 		// 1.3.5: just add filter and check states within function
-		$vinpostpriority = fcs_get_option('fcs_inpost_priority',true);
-		add_filter('the_content', 'fcs_do_inpost_sidebars', $vinpostpriority);
+		$vinpostpriority = fcsb_get_option('fcs_inpost_priority',true);
+		add_filter('the_content', 'fcsb_do_inpost_sidebars', $vinpostpriority);
 	}
 }
 
 // Do InPost Sidebars
 // ------------------
-function fcs_do_inpost_sidebars($vpostcontent) {
+function fcsb_do_inpost_sidebars($vpostcontent) {
 
 	global $post, $vfcsoverrides, $vfcsexcerpt, $vfcsstate;
 
@@ -1794,17 +1792,17 @@ function fcs_do_inpost_sidebars($vpostcontent) {
 	if (!is_object($post)) {return $vpostcontent;}
 
 	// check for Content Marker (case insensitive)
-	$vcontentmarker = fcs_get_option('fcs_inpost_marker',true);
+	$vcontentmarker = fcsb_get_option('fcs_inpost_marker',true);
 	if (!stristr($vpostcontent,$vcontentmarker)) {return $vpostcontent;}
 
 	// get general disable options
-	$vinpostdisable1 = fcs_get_option('fcs_inpost1_disable');
-	$vinpostdisable2 = fcs_get_option('fcs_inpost2_disable');
-	$vinpostdisable3 = fcs_get_option('fcs_inpost3_disable');
+	$vinpostdisable1 = fcsb_get_option('fcs_inpost1_disable');
+	$vinpostdisable2 = fcsb_get_option('fcs_inpost2_disable');
+	$vinpostdisable3 = fcsb_get_option('fcs_inpost3_disable');
 
 	// check InPost disable options
 	$vpostid = $post->ID;
-	$vcptoptions = fcs_get_option('fcs_inpost_sidebars_cpts',true);
+	$vcptoptions = fcsb_get_option('fcs_inpost_sidebars_cpts',true);
 	if (strstr($vcptoptions,',')) {$vinpostcpts = explode(',',$vcptoptions);}
 	else {$vinpostcpts[0] = $vcptoptions;}
 	$vinpostcpts = apply_filters('fcs_inpost_sidebars_cpts',$vinpostcpts);
@@ -1853,9 +1851,9 @@ function fcs_do_inpost_sidebars($vpostcontent) {
 	}
 
 	// get inpost content positions
-	$vpositiona = fcs_get_option('fcs_inpost_positiona',true);
-	$vpositionb = fcs_get_option('fcs_inpost_positionb',true);
-	$vpositionc = fcs_get_option('fcs_inpost_positionc',true);
+	$vpositiona = fcsb_get_option('fcs_inpost_positiona',true);
+	$vpositionb = fcsb_get_option('fcs_inpost_positionb',true);
+	$vpositionc = fcsb_get_option('fcs_inpost_positionc',true);
 	if (!is_numeric($vpositiona)) {$vpositiona = -1;}
 	if (!is_numeric($vpositionb)) {$vpositionb = -1;}
 	if (!is_numeric($vpositionc)) {$vpositionc = -1;}
@@ -1871,7 +1869,7 @@ function fcs_do_inpost_sidebars($vpostcontent) {
 			if (is_active_sidebar('InPost1')) {
 				$vsidebar = PHP_EOL.'<div id="inpostsidebar1" class="inpostsidebar"';
 				// 1.4.0: added float style option
-				$vfloat = fcs_get_option('fcs_inpost1_float',true);
+				$vfloat = fcsb_get_option('fcs_inpost1_float',true);
 				if ($vfloat != '') {
 					$vsidebar .= ' style="float:'.$vfloat.';';
 					if ($vfloat == 'left') {$vsidebar .= 'margin-right:30px;"';}
@@ -1879,7 +1877,7 @@ function fcs_do_inpost_sidebars($vpostcontent) {
 					else {$vsidebar .= '"';}
 				}
 				$vsidebar .= '>';
-				$vsidebar .= fcs_get_sidebar('InPost1');
+				$vsidebar .= fcsb_get_sidebar('InPost1');
 				$vsidebar .= '</div>'.PHP_EOL.PHP_EOL;
 			} else {$vsidebar = '';}
 			$vsidebar = apply_filters('fcs_inpost_sidebar1',$vsidebar);
@@ -1890,7 +1888,7 @@ function fcs_do_inpost_sidebars($vpostcontent) {
 			if (is_active_sidebar('InPost2')) {
 				$vsidebar = 'PHP_EOL.<div id="inpostsidebar2" class="inpostsidebar"';
 				// 1.4.0: added float style option
-				$vfloat = fcs_get_option('fcs_inpost2_float',true);
+				$vfloat = fcsb_get_option('fcs_inpost2_float',true);
 				if ($vfloat != '') {
 					$vsidebar .= ' style="float:'.$vfloat.';';
 					if ($vfloat == 'left') {$vsidebar .= 'margin-right:30px;"';}
@@ -1898,7 +1896,7 @@ function fcs_do_inpost_sidebars($vpostcontent) {
 					else {$vsidebar .= '"';}
 				}
 				$vsidebar .= '>';
-				$vsidebar .= fcs_get_sidebar('InPost2');
+				$vsidebar .= fcsb_get_sidebar('InPost2');
 				$vsidebar .= '</div>'.PHP_EOL.PHP_EOL;
 			} else {$vsidebar = '';}
 			$vsidebar = apply_filters('fcs_inpost_sidebar2',$vsidebar);
@@ -1909,7 +1907,7 @@ function fcs_do_inpost_sidebars($vpostcontent) {
 			if (is_active_sidebar('InPost3')) {
 				$vsidebar = PHP_EOL.'<div id="inpostsidebar3" class="inpostsidebar"';
 				// 1.4.0: added float style option
-				$vfloat = fcs_get_option('fcs_inpost3_float',true);
+				$vfloat = fcsb_get_option('fcs_inpost3_float',true);
 				if ($vfloat != '') {
 					$vsidebar .= ' style="float:'.$vfloat.';';
 					if ($vfloat == 'left') {$vsidebar .= 'margin-right:30px;"';}
@@ -1917,7 +1915,7 @@ function fcs_do_inpost_sidebars($vpostcontent) {
 					else {$vsidebar .= '"';}
 				}
 				$vsidebar .= '>';
-				$vsidebar .= fcs_get_sidebar('InPost3');
+				$vsidebar .= fcsb_get_sidebar('InPost3');
 				$vsidebar .= '</div>'.PHP_EOL.PHP_EOL;
 			} else {$vsidebar = '';}
 			$vsidebar = apply_filters('fcs_inpost_sidebar3',$vsidebar);
@@ -1933,8 +1931,8 @@ function fcs_do_inpost_sidebars($vpostcontent) {
 // Metabox Overrides
 // -----------------
 
-add_action('add_meta_boxes','fcs_add_perpage_metabox');
-function fcs_add_perpage_metabox() {
+add_action('add_meta_boxes','fcsb_add_perpage_metabox');
+function fcsb_add_perpage_metabox() {
 
 	$vcpts[0] = 'post'; $vcpts[1] = 'page';
 	$vargs = array('public'=>true, '_builtin' => false);
@@ -1949,14 +1947,14 @@ function fcs_add_perpage_metabox() {
 	// 1.3.5: fix to variable typo here
 	if (count($vcpts) > 0) {
 		foreach ($vcpts as $vcpt) {
-			add_meta_box('fcs_perpage_metabox', 'Content Sidebars', 'fcs_perpage_metabox', $vcpt, 'normal', 'low');
+			add_meta_box('fcsb_perpage_metabox', 'Content Sidebars', 'fcsb_perpage_metabox', $vcpt, 'normal', 'low');
 		}
 	}
 }
 
 // Content Sidebars Metabox
 // ------------------------
-function fcs_perpage_metabox() {
+function fcsb_perpage_metabox() {
 
 	global $post, $vfcsoverrides;
 	if (is_object($post)) {
@@ -1973,58 +1971,61 @@ function fcs_perpage_metabox() {
 	echo __('current settings','csidebars');
 	echo "</b></a> ";
 	echo __('for Content Sidebar Output on this','csidebars');
-	echo " ".$vposttypedisplay.":<br>";
+	echo " ".$vposttypedisplay." (";
+	echo __('indicated in bold','csidebars')."):<br>";
 
 	// Above/Below, Login/LoggedIn
 	echo "<table><tr>";
 	echo "<td>".__('Above Content','csidebars')."</td>";
-	fcs_output_setting_cell('abovecontent');
+	fcsb_output_setting_cell('abovecontent');
 	echo "<td width='20'>&nbsp;</td>";
 	echo "<td>".__('Below Content','csidebars')."</td>";
-	fcs_output_setting_cell('belowcontent');
+	fcsb_output_setting_cell('belowcontent');
 	echo "</tr>";
 	echo "<tr><td>".__('Login','csidebars')."</td>";
-	fcs_output_setting_cell('login');
+	fcsb_output_setting_cell('login');
 	echo "<td width='20'>&nbsp;</td>";
 	echo "<td><span class='fcs-small'>".__('Logged In (fallback)','csidebars')."</span></td>";
-	fcs_output_setting_cell('member');
+	fcsb_output_setting_cell('member');
 	echo "</tr>";
 
 	// Shortcode and InPost Sidebars
 	echo "<tr><td>".__('Shortcode','csidebars').' 1'."</td>";
-	fcs_output_setting_cell('shortcode1');
+	fcsb_output_setting_cell('shortcode1');
 	echo "<td width='20'>&nbsp;</td>";
 	echo "<td>".__('InPost','csidebars')." 1</td>";
-	fcs_output_setting_cell('inpost1');
+	fcsb_output_setting_cell('inpost1');
 	echo "</tr>";
 	echo "<tr><td>".__('Shortcode','csidebars')." 2</td>";
-	fcs_output_setting_cell('shortcode2');
+	fcsb_output_setting_cell('shortcode2');
 	echo "<td width='20'>&nbsp;</td>";
 	echo "<td>".__('InPost','csidebars')." 2</td>";
-	fcs_output_setting_cell('inpost2');
+	fcsb_output_setting_cell('inpost2');
 	echo "</tr>";
 	echo "<tr><td>".__('Shortcode','csidebars')." 3</td>";
-	fcs_output_setting_cell('shortcode3');
+	fcsb_output_setting_cell('shortcode3');
 	echo "<td width='20'>&nbsp;</td>";
 	echo "<td>".__('InPost','csidebars')." 3</td>";
-	fcs_output_setting_cell('inpost3');
+	fcsb_output_setting_cell('inpost3');
 	echo "</tr>";
 
 	echo "</table>";
 }
 
-function fcs_output_setting_cell($vid) {
+// Output Setting Cell
+// -------------------
+function fcsb_output_setting_cell($vid) {
 	global $vfcsoverrides, $post;
 
 	// check sidebar state
-	$vdisable = fcs_get_option($vid.'_disable');
+	$vdisable = fcsb_get_option($vid.'_disable');
 	if ($vdisable == 'yes') {$vstate = 'off';}
 	else {
 		$vstate = 'on';
 		// check output for this post type
 		if ( (is_object($post)) && (!strstr($vid,'shortcode')) ) {
-			if (strstr($vid,'inpost')) {$vsidebarcpts = fcs_get_option('fcs_inpost_sidebars_cpts');}
-			else {$vsidebarcpts = fcs_get_option($vid.'_sidebar_cpts');}
+			if (strstr($vid,'inpost')) {$vsidebarcpts = fcsb_get_option('fcs_inpost_sidebars_cpts');}
+			else {$vsidebarcpts = fcsb_get_option($vid.'_sidebar_cpts');}
 			if (strstr($vsidebarcpts,',')) {$vcpts = explode(',',$vsidebarcpts);}
 			else {$vcpts[0] = $vsidebarcpts;}
 			$vposttype = get_post_type($post->ID);
@@ -2056,11 +2057,11 @@ function fcs_output_setting_cell($vid) {
 
 // Update Meta Values on Save
 // --------------------------
-add_action('publish_post','fcs_perpage_updates');
-add_action('save_post','fcs_perpage_updates');
+add_action('publish_post','fcsb_perpage_updates');
+add_action('save_post','fcsb_perpage_updates');
 
 // 1.3.5: efficient save using single postmeta value
-function fcs_perpage_updates() {
+function fcsb_perpage_updates() {
 
 	// 1.3.5: return if post object is empty
 	global $post, $vfcsoverrides;
