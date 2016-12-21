@@ -48,7 +48,7 @@ Filters and Widget plugins are available for advanced display and output logic f
 sidebars, giving even further flexible options to when and which sidebars are displayed.
 
 [Content Sidebars Home] (http://wordquest.org/plugins/content-sidebars/)
-[Support Forum] (http://wordquest.org/quest/quest-category/plugin-support/content-sidebars/)
+[Support Forum] (http://wordquest.org/support/content-sidebars/)
 
 
 **Above/Below Content Sidebars** - *for Subscribe / Join / Call-to-Action Offers*
@@ -106,7 +106,7 @@ does not output at all. So this useful type of widget as been included with Cont
 Credit: [Hackadelic Discreet Text Widget] (https://wordpress.org/plugins/hackadelic-discreet-text-widget/)
 
 [Content Sidebars Home] (http://wordquest.org/plugins/content-sidebars/)
-[Support Forum] (http://wordquest.org/quest/quest-category/plugin-support/content-sidebars/)
+[Support Forum] (http://wordquest.org/support/content-sidebars/)
 
 
 == Installation ==
@@ -122,7 +122,7 @@ Credit: [Hackadelic Discreet Text Widget] (https://wordpress.org/plugins/hackade
 
 1. Once activated your will have additional Widget Areas available via Appearance -> Widgets.
 1. You can change your Content Sidebar Settings via Appearance -> Content Sidebars.
-1. There are other options relating to the different types of Sidebars explained below.
+1. There are other Plugin Options relating to the different types of Sidebars (explained below.)
 1. You can change PerPost Sidebar Display options via the post writing/editing screen Metabox.
 1. You can use filters or plugins to change the Sidebar output conditions (see last question.)
 
@@ -189,11 +189,11 @@ Simply look for: `do_action('my_themes_action_hook');` or add it where desired. 
 the corresponding hook name for that Sidebar on the Content Sidebars Settings Page, so that
 when the action hook is fired, the sidebar function is called, outputting the content sidebar.
 
-Alternatively, you can call the sidebars directly in code with the function fcs_get_sidebar(), 
+Alternatively, you can call the sidebars directly in code with the function csidebars_get_sidebar(), 
 eg. *Above Content Sidebar*
-`<?php if (function_exists('fcs_get_sidebar')) {echo fcs_get_sidebar('AboveContent');} ?>`
+`<?php if (function_exists('csidebars_get_sidebar')) {echo csidebars_get_sidebar('AboveContent');} ?>`
 *Below Content Sidebar*
-`<?php if (function_exists('fcs_get_sidebar')) {echo fcs_get_sidebar('BelowContent');} ?>`
+`<?php if (function_exists('csidebars_get_sidebar')) {echo csidebars_get_sidebar('BelowContent');} ?>`
 (Note: Do NOT forget the function_exist wrappers - they prevent your layout from breaking
 if you need to disable the Content Sidebars plugin at any time.)
 
@@ -217,7 +217,7 @@ page template, eg. header.php (again the default hook name used is for [BioShip 
 Again, look in your Theme template for: 
 `do_action('my_themes_action_hook');`
 or for a function call you can do:
-`<?php if (function_exists('fcs_get_sidebar')) {echo fcs_get_sidebar('LoginSidebar');} ?>`
+`<?php if (function_exists('csidebars_get_sidebar')) {echo csidebars_get_sidebar('LoginSidebar');} ?>`
 
 
 = How do I use the 'Logged In' Sidebar? =
@@ -267,7 +267,6 @@ within a Text Widget. In order to do so, you need to make sure the Wordpress sho
 filter is applied to the widget_text content. Here is what this code looks like:
 `<?php if (!has_filter('widget_text','do_shortcode')) {add_filter('widget_text','do_shortcode');} ?>`
 You can activate this code from the Settings page for widget text (and optionally widget titles.)
-You can also place this code in a PHP file in your /wp-content/mu-plugins/ folder.
 
 Once you know that is in place, you can add any shortcode to a Text Widget and it will be
 used to display the return value of the executed shortcode, eg. for [my-custom-shortcode]
@@ -281,7 +280,11 @@ all (ie. the Widget title is not displayed either if there is no Widget text out
 
 = How do I use filter individual Widgets for different conditions? =
 
-The easy way to do this is in combination with a *conditional widget plugin*, so you can 
+Content Sidebars now includes options for displaying on different custom post types,
+as well as specific archive conditions (archive, tag, category, taxonomy, date, author)
+and other special conditions (front page, home page, 404 pages, search pages)
+
+If you want more control, you can combine with a *conditional widget plugin*, so you can 
 drop those Widgets in the Sidebars of your choice to display a Widget conditionally in 
 any of these new Sidebar areas for different purposes. ie. posts or pages or CPTs or
 other conditions. eg. [Widget Logic Plugin], [Display Widgets Plugin], etc...
@@ -294,27 +297,29 @@ For consistency these filters have the same key as the plugin settings. The full
 settings (and thus filters) can be seen in the plugin setting initialization list.
 
 For example, you can disable a sidebar according to conditions using these filters:
-`fcs_abovecontent_disable, fcs_belowcontent_disable, fcs_login_disable, fcs_member_disable`
-`fcs_shortcode_sidebar1, fcs_shortcode_sidebar2, fcs_shortcode_sidebar3`
-`fcs_inpost_sidebar1, fcs_inpost_sidebar2, fcs_inpost_sidebar3`
+`csidebars_abovecontent_disable, csidebars_belowcontent_disable`
+`csidebars_login_disable, csidebars_member_disable`
+`csidebars_shortcode_sidebar1, csidebars_shortcode_sidebar2, csidebars_shortcode_sidebar3`
+`csidebars_inpost_sidebar1, csidebars_inpost_sidebar2, csidebars_inpost_sidebar3`
 
 eg. To remove the above content sidebar from the site Front Page only:
-`add_filter('fcs_abovecontent_disable','my_custom_sidebar_filter1');`
+`add_filter('csidebars_abovecontent_disable','my_custom_sidebar_filter1');`
 `function my_custom_sidebar_filter1() {if (is_front_page()) {return 'yes';} }`
-(for disbable filters, returning yes indicates the sidebar is to be *disabled*.)
+(for disable filters, returning yes indicates the sidebar is to be *disabled*.)
 
 You can also filter the entire sidebar output with the following filters:
-`fcs_abovecontent_sidebar, fcs_belowcontent_sidebar, fcs_loginsidebar, fcs_member_sidebar`
-`fcs_shortcode_sidebar1, fcs_shortcode_sidebar2, fcs_shortcode_sidebar3`
-`fcs_inpost_sidebar1, fcs_inpost_sidebar2, fcs_inpost_sidebar3`
+`csidebars_abovecontent_sidebar, csidebars_belowcontent_sidebar`
+`csidebars_loginsidebar, csidebars_member_sidebar`
+`csidebars_shortcode_sidebar1, csidebars_shortcode_sidebar2, csidebars_shortcode_sidebar3`
+`csidebars_inpost_sidebar1, csidebars_inpost_sidebar2, csidebars_inpost_sidebar3`
 
 eg. To replace the output of the Above Content Sidebar for the site Front Page only:
-`add_filter('fcs_abovecontent_sidebar','my_custom_sidebar_filter2');`
+`add_filter('csidebars_abovecontent_sidebar','my_custom_sidebar_filter2');`
 `function my_custom_sidebar_filter2() {if (is_front_page()) {return 'Welcome!';} }`
 
 `*` additionally, `*_loggedout` and `*_loggedin` filters can be used for any sidebar.
 eg. To remove the Above Content Sidebar from the Front Page for logged in users:
-`add_filter('fcs_abovecontent_sidebar_loggedin','my_custom_sidebar_filter3');`
+`add_filter('csidebars_abovecontent_sidebar_loggedin','my_custom_sidebar_filter3');`
 `function my_custom_sidebar_filter3() {if (is_front_page()) {return '';} }`
 
 Using the filters makes when, where and what your sidebars display for different page
@@ -330,6 +335,16 @@ conditions extremely flexible... we leave it up to your unlimited imagination!
 
 
 == Changelog ==
+
+= 1.5.5 = 
+* Update WordQuest Library to 1.6.5
+* Validate options values on saving
+* Fix to taxonomy sidebar option saving
+* Fix to disable key metabox override saving
+* Changed function prefix to csidebars_
+* Changed filter prefixes to csidebars_
+* Renamed some double filters to overrides
+* Replaced plugin_dir_url with plugins_url
 
 = 1.5.0 =
 * Added nonce checks for settings updates
