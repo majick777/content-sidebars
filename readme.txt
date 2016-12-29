@@ -47,8 +47,8 @@ type on the post writing/editing screen to enable/disable any of these sidebars 
 Filters and Widget plugins are available for advanced display and output logic for all 
 sidebars, giving even further flexible options to when and which sidebars are displayed.
 
-[Content Sidebars Home] (http://wordquest.org/plugins/content-sidebars/)
-[Support Forum] (http://wordquest.org/support/content-sidebars/)
+[Content Sidebars Home](http://wordquest.org/plugins/content-sidebars/)
+[Support Forum](http://wordquest.org/support/content-sidebars/)
 
 
 **Above/Below Content Sidebars** - *for Subscribe / Join / Call-to-Action Offers*
@@ -105,8 +105,8 @@ nothing at all. If you were using a normal text widget it would still output the
 does not output at all. So this useful type of widget as been included with Content Sidebars.
 Credit: [Hackadelic Discreet Text Widget] (https://wordpress.org/plugins/hackadelic-discreet-text-widget/)
 
-[Content Sidebars Home] (http://wordquest.org/plugins/content-sidebars/)
-[Support Forum] (http://wordquest.org/support/content-sidebars/)
+[Content Sidebars Home](http://wordquest.org/plugins/content-sidebars/)
+[Support Forum](http://wordquest.org/support/content-sidebars/)
 
 
 == Installation ==
@@ -403,27 +403,26 @@ conditions extremely flexible... we leave it up to your unlimited imagination!
 
 == Other Notes ==
 
-[Content Sidebars Home] (http://wordquest.org/plugins/content-sidebars/)
+[Content Sidebars Home](http://wordquest.org/plugins/content-sidebars/)
 
 Like this plugin? Check out more of our free plugins here: 
-[WordQuest Alliance Plugins] (http://wordquest.org/plugins/)
+[WordQuest Alliance Plugins](http://wordquest.org/plugins/)
 
 Looking for an awesome theme? Check out my child theme framework:
-[BioShip Child Theme Framework] (http://bioship.space/)
+[BioShip Child Theme Framework](http://bioship.space/)
 
 = Support = 
 For support or if you have an idea to improve this plugin:
-[Content Sidebars Support Quests] (http://wordquest.org/support/content-sidebars/)
+[Content Sidebars Support Quests](http://wordquest.org/support/content-sidebars/)
 
 = Donate = 
 To make a donation for a feature request, or to activate a supporter subscription:
-[Content Sidebars Donation] (http://wordquest.org/contribute/?plugin=content-sidebars)
+[Content Sidebars Donation](http://wordquest.org/contribute/?plugin=content-sidebars)
 
 = Development =
 To contribute directly to development, fork on Github and do a pull request:
-[Content Sidebars on Github] (http://github.com/majick777/content-sidebars/)
+[Content Sidebars on Github](http://github.com/majick777/content-sidebars/)
 
 = Planned Updates/Features =
 * Subcriber Recognition code via Cookie detection option
 * Smart Filters to hide Subscription Widgets from Subscribed Visitors
-
