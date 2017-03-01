@@ -62,7 +62,7 @@ these spaces wisely on any webpage is a must.
 
 The Above/Below Sidebars work either via Template Action Hooks or Content Filters methods.
 Either method can be used with any theme. The Template Action Hook defaults are preconfigured 
-for immediate use with [BioShip Child Theme Framework] (http://bioship.space)
+for immediate use with [BioShip Child Theme Framework](http://bioship.space)
 
 
 **Login Sidebar** - *for Easy Return Visitor Login*
@@ -103,7 +103,7 @@ in your Sidebars. However, in different conditions you may want this shortcode t
 nothing at all. If you were using a normal text widget it would still output the empty widget
 (with title etc.) - but with a Discreet Text Widget, if the shortcode returns empty the widget
 does not output at all. So this useful type of widget as been included with Content Sidebars.
-Credit: [Hackadelic Discreet Text Widget] (https://wordpress.org/plugins/hackadelic-discreet-text-widget/)
+Credit: [Hackadelic Discreet Text Widget Plugin](https://wordpress.org/plugins/hackadelic-discreet-text-widget/)
 
 [Content Sidebars Home](http://wordquest.org/plugins/content-sidebars/)
 [Support Forum](http://wordquest.org/support/content-sidebars/)
@@ -335,6 +335,12 @@ conditions extremely flexible... we leave it up to your unlimited imagination!
 
 
 == Changelog ==
+
+= 1.6.0 =
+* WordPress.Org compliance updates
+* Remove direct load CSS output method
+* Update WordQuest Library to 1.6.6
+* Update Freemius Library 1.2.1.5
 
 = 1.5.5 = 
 * Update WordQuest Library to 1.6.5
