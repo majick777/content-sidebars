@@ -5,9 +5,10 @@ Plugin Name: Content Sidebars
 Plugin URI: http://wordquest.org/plugins/content-siderbars/
 Author: Tony Hayes
 Description: Adds Flexible Dynamic Sidebars to your Content Areas without editing your theme.
-Version: 1.5.5
+Version: 1.6.0
 Author URI: http://wordquest.org/
 GitHub Plugin URI: majick777/content-sidebars
+@fs_premium_only pro-functions.php
 */
 
 /*
@@ -32,12 +33,12 @@ GitHub Plugin URI: majick777/content-sidebars
 // -----------------
 global $wordquestplugins;
 $vslug = $vcsidebarsslug = 'content-sidebars';
-$wordquestplugins[$vslug]['version'] = $vcsidebarsversion = '1.5.5';
+$wordquestplugins[$vslug]['version'] = $vcsidebarsversion = '1.6.0';
 $wordquestplugins[$vslug]['title'] = 'Content Sidebars';
 $wordquestplugins[$vslug]['namespace'] = 'csidebars';
-$wordquestplugins[$vslug]['settings'] = 'fcs';
+$wordquestplugins[$vslug]['settings'] = $vpre = 'fcs';
 $wordquestplugins[$vslug]['hasplans'] = false;
-// $wordquestplugins[$vslug]['wporgslug'] = 'content-sidebars';
+$wordquestplugins[$vslug]['wporgslug'] = 'content-sidebars';
 
 // ------------------------
 // Check for Update Checker
@@ -51,7 +52,8 @@ else {include($vupdatechecker); $wordquestplugins[$vslug]['wporg'] = false;}
 // -----------------------------------
 // Load WordQuest Helper/Pro Functions
 // -----------------------------------
-if (is_admin()) {$wordquest = dirname(__FILE__).'/wordquest.php'; if (file_exists($wordquest)) {include($wordquest);} }
+$wordquest = dirname(__FILE__).'/wordquest.php';
+if ( (is_admin()) && (file_exists($wordquest)) ) {include($wordquest);}
 $vprofunctions = dirname(__FILE__).'/pro-functions.php';
 if (file_exists($vprofunctions)) {include($vprofunctions); $wordquestplugins[$vslug]['plan'] = 'premium';}
 else {$wordquestplugins[$vslug]['plan'] = 'free';}
@@ -110,35 +112,42 @@ function csidebars_freemius_connect($message, $user_first_name, $plugin_title, $
 		$user_first_name, '<b>'.$plugin_title.'</b>', '<b>'.$user_login.'</b>', $site_link, $freemius_link
 	);
 }
-csidebars_freemius($vslug)->add_filter('connect_message', 'csidebars_freemius_connect', WP_FS__DEFAULT_PRIORITY, 6);
+// 1.5.9: add object and method exists checks
+if ( (is_object($csidebars_freemius)) && (method_exists($csidebars_freemius,'add_filter')) ) {
+	$csidebars_freemius->add_filter('connect_message', 'csidebars_freemius_connect', WP_FS__DEFAULT_PRIORITY, 6);
+}
 
 // Add Admin Page
 // --------------
-if (is_admin()) {add_action('admin_menu','csidebars_settings_menu',1);}
+add_action('admin_menu','csidebars_settings_menu',1);
 function csidebars_settings_menu() {
+
+	// maybe add Wordquest top level menu
 	if (empty($GLOBALS['admin_page_hooks']['wordquest'])) {
 		$vicon = plugins_url('images/wordquest-icon.png',__FILE__); $vposition = apply_filters('wordquest_menu_position','3');
 		add_menu_page('WordQuest Alliance', 'WordQuest', 'manage_options', 'wordquest', 'wqhelper_admin_page', $vicon, $vposition);
 	}
+
+	// add plugin submenu
 	add_submenu_page('wordquest', 'Content Sidebars', 'Content Sidebars', 'manage_options', 'content-sidebars', 'csidebars_options_page');
 
-	// Add icons and styling to the plugin submenu :-)
+	// add icons and styling to the plugin submenu :-)
 	add_action('admin_footer','csidebars_admin_javascript');
 	function csidebars_admin_javascript() {
 		global $vcsidebarsslug; $vslug = $vcsidebarsslug; $vcurrent = '0';
 		$vicon = plugins_url('images/icon.png',__FILE__);
-		if (isset($_REQUEST['page'])) {if ($_REQUEST['page'] == $vslug) {$vcurrent = '1';} }
+		if ( (isset($_REQUEST['page'])) && ($_REQUEST['page'] == $vslug) ) {$vcurrent = '1';}
 		echo "<script>jQuery(document).ready(function() {if (typeof wordquestsubmenufix == 'function') {
 		wordquestsubmenufix('".$vslug."','".$vicon."','".$vcurrent."');} });</script>";
 	}
 
-	// Add Plugin Settings Link
+	// add Plugin Settings Link
 	add_filter('plugin_action_links', 'csidebars_register_plugin_links', 10, 2);
 	function csidebars_register_plugin_links($vlinks, $vfile) {
 		global $vcsidebarsslug;
 		$vthisplugin = plugin_basename(__FILE__);
 		if ($vfile == $vthisplugin) {
-			$vsettingslink = "<a href='admin.php?page=".$vcsidebarsslug."'>Settings</a>";
+			$vsettingslink = "<a href='".admin_url('admin.php')."?page=".$vcsidebarsslug."'>".__('Settings','csidebars')."</a>";
 			array_unshift($vlinks, $vsettingslink);
 		}
 		return $vlinks;
@@ -158,8 +167,10 @@ function csidebars_theme_options_page() {
 	global $vcsidebarsslug; wp_redirect(admin_url('admin.php').'?page='.$vcsidebarsslug);
 }
 // trigger redirect to real admin menu item
-if (strstr($_SERVER['REQUEST_URI'],'/wp-admin/themes.php')) {
-	if (isset($_REQUEST['page'])) {if ($_REQUEST['page'] == 'flexi-sidebars') {add_action('init','csidebars_theme_options_page');} }
+if (strstr($_SERVER['REQUEST_URI'],'/themes.php')) {
+	if ( (isset($_REQUEST['page'])) && ($_REQUEST['page'] == 'flexi-sidebars') ) {
+		add_action('init','csidebars_theme_options_page');
+	}
 }
 
 // Load Sidebar Styles
@@ -167,22 +178,67 @@ if (strstr($_SERVER['REQUEST_URI'],'/wp-admin/themes.php')) {
 // 1.3.5: changed to wp_enqueue_scripts hook
 add_action('wp_enqueue_scripts','csidebars_queue_styles');
 function csidebars_queue_styles() {
+
 	$vcssmode = csidebars_get_option('css_mode',true);
-	if ($vcssmode == 'default') {
-		$vflexisidebarcss = plugins_url('content-sidebars.css', __FILE__);
-		wp_enqueue_style('flexi_content_sidebar_styles',$vflexisidebarcss);
-	}
-	elseif ($vcssmode == 'adminajax') {
-		$vversion = csidebars_get_option('last_saved');
-		wp_enqueue_style('fcs-dynamic', admin_url('admin-ajax.php').'?action=csidebars_dynamic_css', array(), $vversion); // $media
-	}
-	elseif ( ($vcssmode == 'direct') || ($vcssmode == 'dynamic') ) {
+
+	if ( ($vcssmode == 'direct') || ($vcssmode == 'dynamic') ) {
 	 	// 1.4.5: added direct URL load option as new default
+		// 1.5.6: check/write exact ABSPATH for safe wp-load
+		// 1.5.7: only write single require line to wp-loader.php
+		// 1.5.8: remove direct dynamic PHP to CSS mode
+		$vcssmode = 'write';
+	}
+
+	if ($vcssmode == 'default') {
+		// 1.5.8: added check for default style file just in case
+		$vcssfile = dirname(__FILE__).'/content-default.css';
+		if (!file_exists($vcssfile)) {$vcssmode = 'adminajax';}
+		else {
+			$vcssurl = plugins_url('content-default.css', __FILE__);
+			wp_enqueue_style('content-sidebars-css',$vcssurl);
+		}
+	}
+
+	if ($vcssmode == 'write') {
+		// 1.5.6: added write/check method
+		$vcssfile = dirname(__FILE__).'/content-sidebars.css';
+		$vcssurl = plugins_url('content-sidebars.css', __FILE__);
+		$vcss = csidebars_get_option('dynamic_css',true);
+		if (file_get_contents($vcssfile) != $vcss) {
+			// rewrite the file as saved the CSS has changed
+			// 1.5.7: check the WP Filesystem before writing
+			$vcheckmethod = get_filesystem_method(array(),$vdirpath,false);
+			if ($vcheckmethod !== 'direct') {$vcssmode = 'adminajax';}
+			else {$vfh = fopen($vcssfile,'w'); fwrite($vfh,$vcss); fclose($vfh);}
+		}
+		if ($vcssmode != 'adminajax') {
+			$vversion = csidebars_get_option('last_saved');
+			wp_enqueue_style('content-sidebars-css', $vcssurl, array(), $vversion);
+		}
+	}
+
+	// 1.5.7: AJAX mode also used as fallback
+	if ($vcssmode == 'adminajax') {
 		$vversion = csidebars_get_option('last_saved');
-		$vcssurl = plugins_url('content-sidebars-css.php',__FILE__);
-		wp_enqueue_style('fcs-dynamic', $vcssurl, array(), $vversion); // $media
+		$vajaxurl = admin_url('admin-ajax.php').'?action=csidebars_dynamic_css';
+		wp_enqueue_style('content-sidebars-css', $vajaxurl, array(), $vversion);
 	}
 }
+
+// Check File System Credentials
+// -----------------------------
+// function csidebars_filesystem_check_creds($vurl, $vmethod, $vcontext, $vextrafields) {
+//	global $wp_filesystem;
+//	if (empty($wp_filesystem)) {
+//		$vfilefunctions = ABSPATH.'/wp-admin/includes/file.php';
+//		if (!file_exists($vfilefunctions)) {return false;}
+//		else {require_once($vfilefunctions); WP_Filesystem();}
+//	}
+//	$vcredentials = request_filesystem_credentials($vurl, $vmethod, false, $vcontext, $vextrafields);
+//	if ($vcredentials === false) {return false;}
+//	if (!WP_Filesystem($vcredentials)) {return false;}
+//	return true;
+// }
 
 // AJAX Dynamic CSS Output
 // -----------------------
@@ -377,7 +433,12 @@ function csidebars_get_option($vkey,$vfilter=false) {
 			$vvalue = apply_filters('fcs_'.$vkey,$vcsidebars[$vkey]);
 			return apply_filters('csidebars_'.$vkey,$vvalue);
 		} else {return $vcsidebars[$vkey];}
-	} else {return '';}
+	} else {
+		// 1.5.9: fallback to default option
+		$vdefaults = csidebars_default_options();
+		if (isset($vdefaults[$vkey])) {return $vdefaults[$vkey];}
+		else {return '';}
+	}
 }
 
 // maybe Transfer Old Settings
@@ -419,8 +480,27 @@ function csidebars_add_options() {
 
 	global $vcsidebars, $vcsidebarsslug, $wordquestplugins;
 
+	// 1.5.9: use default options function
+	$vcsidebars = csidebars_default_options();
+
+	// add global option array
+	add_option('content_sidebars',$vcsidebars);
+
+	// sidebar options
+	if (file_exists(dirname(__FILE__).'/updatechecker.php')) {$vadsboxoff = '';} else {$vadsboxoff = 'checked';}
+	$sidebaroptions = array('adsboxoff'=>$vadsboxoff,'donationboxoff'=>'','reportboxoff'=>'','installdate'=>date('Y-m-d'));
+	$vpre = $wordquestplugins[$vcsidebarsslug]['settings'];
+	add_option($vpre.'_sidebar_options',$sidebaroptions);
+}
+
+// get Default Options
+// -------------------
+// 1.5.9: separate default options function
+function csidebars_default_options() {
+
 	// method
-	$vcsidebarsoptions['abovebelow_method'] = 'hooks';
+	// 1.5.7: fix to global variable name
+	$vcsidebars['abovebelow_method'] = 'hooks';
 
 	// template hooks
 	$vcsidebars['abovecontent_hook'] = 'skeleton_before_loop';
@@ -493,20 +573,12 @@ function csidebars_add_options() {
 	$vcsidebars['dynamic_css'] = $vdefaultcss;
 	$vcsidebars['last_saved'] = time();
 
-	// add global option array
-	add_option('content_sidebars',$vcsidebars);
-
-	// sidebar options
-	if (file_exists(dirname(__FILE__).'/updatechecker.php')) {$vadsboxoff = '';} else {$vadsboxoff = 'checked';}
-	$sidebaroptions = array('adsboxoff'=>$vadsboxoff,'donationboxoff'=>'','reportboxoff'=>'','installdate'=>date('Y-m-d'));
-	$vpre = $wordquestplugins[$vcsidebarsslug]['settings'];
-	add_option($vpre.'_sidebar_options',$sidebaroptions);
+	return $vcsidebars;
 }
-
 
 // Reset Options
 // -------------
-// 1.3.5: reset options function
+// 1.3.5: added reset options function
 if ( (isset($_GET['contentsidebars'])) && ($_GET['contentsidebars'] == 'reset') ) {add_action('init','csidebars_reset_options',0);}
 function csidebars_reset_options() {
 	if (current_user_can('manage_options')) {delete_option('content_sidebars'); csidebars_add_options();}
@@ -529,6 +601,7 @@ function csidebars_update_options() {
 	global $vcsidebars;
 
 	// 1.5.5: added option data types for saving
+	// 1.5.8: remove direct dynamic PHP CSS method
 	// update all option keys here except the CPT ones
 	$voptionkeys = array('abovebelow_method' => 'hooks/filter',
 		'abovecontent_hook' => 'alphanumeric', 'belowcontent_hook' => 'alphanumeric',
@@ -546,7 +619,7 @@ function csidebars_update_options() {
 		'inpost_marker' => 'textarea', 'inpost_priority' => 'numeric',
 		'inpost_positiona' => 'numeric', 'inpost_positionb' => 'numeric', 'inpost_positionc' => 'numeric',
 		'inpost1_float' => '/none/left/right', 'inpost2_float' => '/none/left/right', 'inpost3_float' => '/none/left/right',
-		'css_mode' => 'default/adminajax/direct', 'dynamic_css' => 'textarea'
+		'css_mode' => 'default/adminajax/write', 'dynamic_css' => 'textarea'
 	);
 
 	// 1.5.5: validate option values before saving
@@ -555,13 +628,14 @@ function csidebars_update_options() {
 		if (strstr($vtype,'/')) {
 			$vvalid = explode('/',$vtype);
 			if (in_array($vposted,$vvalid)) {$vcsidebars[$vkey] = $vposted;}
-			else {$vcsidebarss[$vkey] = $vvalid[0];}
+			else {$vcsidebars[$vkey] = $vvalid[0];}
 		} elseif ($vtype == 'checkbox') {
 			if ( ($vposted == '') || ($vposted == 'yes') ) {$vcsidebars[$vkey] = $vposted;}
 		} elseif ($vtype == 'numeric') {
 			$vposted = absint($vposted);
 			if (is_numeric($vposted)) {$vcsidebars[$vkey] = $vposted;}
 		} elseif ($vtype == 'alphanumeric') {
+			// TODO: improve this?
 			$vcheckposted = preg_match('/^[a-zA-Z0-9_]+$/',$vposted);
 			if ($vcheckposted) {$vcsidebars[$vkey] = $vposted;}
 		} elseif ($vtype == 'textarea') {
@@ -641,7 +715,6 @@ function csidebars_options_page() {
 
 	// Call Plugin Sidebar
 	// -------------------
-	global $vcsidebarsversion;
 	// $vargs = array('fcs','content-sidebars','free','content-sidebars','','Content Sidebars',$vcsidebarsversion);
 	$vargs = array('content-sidebars','yes'); // trimmed settings
 	if (function_exists('wqhelper_sidebar_floatbox')) {
@@ -691,7 +764,13 @@ function csidebars_options_page() {
 		echo "<tr><td colspan='3' align='center'>".__('by','csidebars');
 		echo " <a href='http://wordquest.org/' style='text-decoration:none;' target=_blank><b>WordQuest Alliance</b></a>";
 		echo "</td></tr></table>";
-	echo "</td><td width='100'></td>";
+	echo "</td><td width='50'></td>";
+	// 1.5.7: added welcome message
+	if ( (isset($_REQUEST['welcome'])) && ($_REQUEST['welcome'] == 'true') ) {
+		echo "<td><table style='background-color: lightYellow; border-style:solid; border-width:1px; border-color: #E6DB55; text-align:center;'>";
+		echo "<tr><td><div class='message' style='margin:0.25em;'><font style='font-weight:bold;'>";
+		echo __('Welcome! For usage see','csidebars')." <i>readme.txt</i> FAQ</font></div></td></tr></table></td>";
+	}
 	if ( (isset($_REQUEST['updated'])) && ($_REQUEST['updated'] == 'yes') ) {
 		echo "<td><table style='background-color: lightYellow; border-style:solid; border-width:1px; border-color: #E6DB55; text-align:center;'>";
 		echo "<tr><td><div class='message' style='margin:0.25em;'><font style='font-weight:bold;'>";
@@ -1150,21 +1229,26 @@ function csidebars_options_page() {
 	$vdefaultcss = file_get_contents(dirname(__FILE__).'/content-default.css');
 	$vcssfile = file_get_contents(dirname(__FILE__).'/content-sidebars.css');
 	$vsavedcss = csidebars_get_option('dynamic_css');
-	// 1.9.9: added direct URL loading as new default
+	// 1.5.0: added direct URL loading as new default
+	// 1.5.6: added file write method (to content-sidebars.css)
 	$vcssmode = csidebars_get_option('css_mode');
-	if ($vcssmode == 'dynamic') {$vcssmode = 'direct';}
+	// 1.5.8: remove direct dnamic PHP to CSS method
+	if ( ($vcssmode == 'dynamic') || ($vcssmode == 'direct') ) {$vcssmode = 'write';}
+	echo "<tr><td style='vertical-align:top;'><b>".__('CSS Mode','csidebars')."</b></td></tr>";
 	echo "<tr><td colspan='3'><table>";
-		echo "<tr><td style='vertical-align:top;'><b>".__('CSS Mode','csidebars')."</b>:<br>";
-		echO __('Enqueues','csidebars').":</td><td width='20'></td>";
 		echo "<td align='center'><input type='radio' name='fcs_css_mode' value='default'";
 		if ($vcssmode == 'default') {echo " checked";}
-		echo "> ".__('Default','csidebars').' ('.__('Static','csidebars').")<br>content-sidebars.css</td><td width='20'></td>";
+		echo "> ".__('Default','csidebars')."<br>content-default.css</td><td width='20'></td>";
 		echo "<td align='center'><input type='radio' name='fcs_css_mode' value='adminajax'";
 		if ($vcssmode == 'adminajax') {echo " checked";}
-		echo "> ".__('Dynamic','csidebars').' ('.__('indirect','csidebars').")<br>".__('via','csidebars')." admin-ajax.php</td><td width='20'></td>";
-		echo "<td align='center'><input type='radio' name='fcs_css_mode' value='direct'";
-		if ($vcssmode == 'direct') {echo " checked";}
-		echo "> ".__('Dynamic','csidebars').' ('.__('direct','csidebars').")<br>content-sidebars-css.php</tr></table><br>";
+		echo "> ".__('AJAX','csidebars')." <br>".__('via','csidebars')." admin-ajax.php</td><td width='20'></td>";
+		// 1.5.8: remove direct dynamic PHP to CSS method
+		// echo "<td align='center'><input type='radio' name='fcs_css_mode' value='direct'";
+		// if ($vcssmode == 'direct') {echo " checked";}
+		// echo "> ".__('Direct','csidebars')." <br>content-sidebars-css.php<td width='20'></td>";
+		echo "<td align='center'><input type='radio' name='fcs_css_mode' value='write'";
+		if ($vcssmode == 'write') {echo " checked";}
+		echo "> ".__('Write','csidebars')." <br>".__('to','csidebars')." content-sidebars.css</tr></table><br>";
 	echo "</td></tr>";
 
 	echo "<tr><td colspan='3'><b>".__('Dynamic CSS','csidebars')."</b>:<br>";
@@ -1448,8 +1532,9 @@ function csidebars_process_shortcodes() {
 			remove_filter('get_the_excerpt','wp_trim_excerpt');
 			add_filter('get_the_excerpt','csidebars_excerpt_with_shortcodes');
 		}
-		add_shortcode('testexcerptshortcode','fcs_test_excerpts');
-		function fcs_test_excerpts() {return 'This shortcode will display in excerpts now.';}
+		// 1.5.9: fix to old function prefix
+		add_shortcode('testexcerptshortcode','csidebars_test_excerpts');
+		function csidebars_test_excerpts() {return 'This shortcode will display in excerpts now.';}
 	}
 }
 
@@ -1779,11 +1864,13 @@ function csidebars_add_content_sidebars($vcontent) {
 
 	// above content sidebar
 	// 1.4.5: use return value not output buffering
-	$vtopsidebar = fcs_add_abovecontent_sidebar();
+	// 1.5.9: fix to old function name
+	$vtopsidebar = csidebars_abovecontent_sidebar();
 
 	// below content sidebar
 	// 1.4.5: use return value not output buffering
-	$vbottomsidebar = fcs_add_belowcontent_sidebar();
+	// 1.5.9: fix to old function name
+	$vbottomsidebar = csidebars_belowcontent_sidebar();
 
 	$vcontent = $vtopsidebar.$vcontent.$vbottomsidebar;
 	return $vcontent;

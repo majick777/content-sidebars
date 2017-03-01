@@ -47,8 +47,8 @@ type on the post writing/editing screen to enable/disable any of these sidebars 
 Filters and Widget plugins are available for advanced display and output logic for all 
 sidebars, giving even further flexible options to when and which sidebars are displayed.
 
-[Content Sidebars Home] (http://wordquest.org/plugins/content-sidebars/)
-[Support Forum] (http://wordquest.org/support/content-sidebars/)
+[Content Sidebars Home](http://wordquest.org/plugins/content-sidebars/)
+[Support Forum](http://wordquest.org/support/content-sidebars/)
 
 
 **Above/Below Content Sidebars** - *for Subscribe / Join / Call-to-Action Offers*
@@ -62,7 +62,7 @@ these spaces wisely on any webpage is a must.
 
 The Above/Below Sidebars work either via Template Action Hooks or Content Filters methods.
 Either method can be used with any theme. The Template Action Hook defaults are preconfigured 
-for immediate use with [BioShip Child Theme Framework] (http://bioship.space)
+for immediate use with [BioShip Child Theme Framework](http://bioship.space)
 
 
 **Login Sidebar** - *for Easy Return Visitor Login*
@@ -103,10 +103,10 @@ in your Sidebars. However, in different conditions you may want this shortcode t
 nothing at all. If you were using a normal text widget it would still output the empty widget
 (with title etc.) - but with a Discreet Text Widget, if the shortcode returns empty the widget
 does not output at all. So this useful type of widget as been included with Content Sidebars.
-Credit: [Hackadelic Discreet Text Widget] (https://wordpress.org/plugins/hackadelic-discreet-text-widget/)
+Credit: [Hackadelic Discreet Text Widget Plugin](https://wordpress.org/plugins/hackadelic-discreet-text-widget/)
 
-[Content Sidebars Home] (http://wordquest.org/plugins/content-sidebars/)
-[Support Forum] (http://wordquest.org/support/content-sidebars/)
+[Content Sidebars Home](http://wordquest.org/plugins/content-sidebars/)
+[Support Forum](http://wordquest.org/support/content-sidebars/)
 
 
 == Installation ==
@@ -336,6 +336,12 @@ conditions extremely flexible... we leave it up to your unlimited imagination!
 
 == Changelog ==
 
+= 1.6.0 =
+* WordPress.Org compliance updates
+* Remove direct load CSS output method
+* Update WordQuest Library to 1.6.6
+* Update Freemius Library 1.2.1.5
+
 = 1.5.5 = 
 * Update WordQuest Library to 1.6.5
 * Validate options values on saving
@@ -403,25 +409,25 @@ conditions extremely flexible... we leave it up to your unlimited imagination!
 
 == Other Notes ==
 
-[Content Sidebars Home] (http://wordquest.org/plugins/content-sidebars/)
+[Content Sidebars Home](http://wordquest.org/plugins/content-sidebars/)
 
 Like this plugin? Check out more of our free plugins here: 
-[WordQuest Alliance Plugins] (http://wordquest.org/plugins/)
+[WordQuest Alliance Plugins](http://wordquest.org/plugins/)
 
 Looking for an awesome theme? Check out my child theme framework:
-[BioShip Child Theme Framework] (http://bioship.space/)
+[BioShip Child Theme Framework](http://bioship.space/)
 
 = Support = 
 For support or if you have an idea to improve this plugin:
-[Content Sidebars Support Quests] (http://wordquest.org/support/content-sidebars/)
+[Content Sidebars Support Quests](http://wordquest.org/support/content-sidebars/)
 
 = Donate = 
 To make a donation for a feature request, or to activate a supporter subscription:
-[Content Sidebars Donation] (http://wordquest.org/contribute/?plugin=content-sidebars)
+[Content Sidebars Donation](http://wordquest.org/contribute/?plugin=content-sidebars)
 
 = Development =
 To contribute directly to development, fork on Github and do a pull request:
-[Content Sidebars on Github] (http://github.com/majick777/content-sidebars/)
+[Content Sidebars on Github](http://github.com/majick777/content-sidebars/)
 
 = Planned Updates/Features =
 * Subcriber Recognition code via Cookie detection option
