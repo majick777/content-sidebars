@@ -5,17 +5,21 @@ Plugin Name: Content Sidebars
 Plugin URI: http://wordquest.org/plugins/content-siderbars/
 Author: Tony Hayes
 Description: Adds Flexible Dynamic Sidebars to your Content Areas without editing your theme.
-Version: 1.6.0
+Version: 1.6.1
 Author URI: http://wordquest.org/
 GitHub Plugin URI: majick777/content-sidebars
 @fs_premium_only pro-functions.php
 */
 
+/* "Do you like seaside bars? I like seaside bars." */
+
+// TODO: define content sidebar hook definitions for layout manager implementation
+
 /*
 // Note, for disambiguation, in the context of this plugin only:
 // Logged In User Sidebar = 'Member' Sidebar
 // 'Fallback' means it is displayed instead when there is a logged in user,
-// and can be activated for the AboveContent, Below Content and Login Sidebars.
+// and can be activated for the Above Content, Below Content and Login Sidebars.
 // 'Login' Sidebar === Login Widget Area (for a Logged Out User)
 // (see readme.txt FAQ for more information.)
 
@@ -31,9 +35,9 @@ GitHub Plugin URI: majick777/content-sidebars
 // -----------------
 // Set Plugin Values
 // -----------------
-global $wordquestplugins;
+global $wordquestplugins, $csidebarsslug, $vcsidebarsversion;
 $vslug = $vcsidebarsslug = 'content-sidebars';
-$wordquestplugins[$vslug]['version'] = $vcsidebarsversion = '1.6.0';
+$wordquestplugins[$vslug]['version'] = $vcsidebarsversion = '1.6.1';
 $wordquestplugins[$vslug]['title'] = 'Content Sidebars';
 $wordquestplugins[$vslug]['namespace'] = 'csidebars';
 $wordquestplugins[$vslug]['settings'] = $vpre = 'fcs';
@@ -76,12 +80,19 @@ function csidebars_freemius($vslug) {
 	}
 
     if (!isset($csidebars_freemius)) {
-        // include Freemius SDK
-        if (!class_exists('Freemius')) {require_once(dirname(__FILE__).'/freemius/start.php');}
 
+        // start the Freemius SDK
+        if (!class_exists('Freemius')) {
+        	$vfreemiuspath = dirname(__FILE__).'/freemius/start.php';
+        	if (!file_exists($vfreemiuspath)) {return;}
+        	require_once($vfreemiuspath);
+        }
+
+		// 1.6.1: added type plugin to settings
 		$csidebars_settings = array(
             'id'                => '163',
             'slug'              => $vslug,
+            'type'				=> 'plugin',
             'public_key'        => 'pk_386ac55ea05fcdcd4daf27798b46c',
             'is_premium'        => $vpremium,
             'has_addons'        => false,
@@ -159,7 +170,7 @@ function csidebars_settings_menu() {
 // -----------------------
 add_action('admin_menu','csidebars_theme_options_menu');
 function csidebars_theme_options_menu() {
-	add_theme_page('Content Sidebars', 'Content Sidebars', 'manage_options', 'flexi-sidebars', 'csidebars_theme_options_dummy');
+	add_theme_page('Content Sidebars', 'Content Sidebars', 'manage_options', 'flexi-content-sidebars', 'csidebars_theme_options_dummy');
 	function csidebars_theme_options_dummy() {} // dummy menu item function
 }
 // appearance menu item redirect
@@ -168,15 +179,15 @@ function csidebars_theme_options_page() {
 }
 // trigger redirect to real admin menu item
 if (strstr($_SERVER['REQUEST_URI'],'/themes.php')) {
-	if ( (isset($_REQUEST['page'])) && ($_REQUEST['page'] == 'flexi-sidebars') ) {
-		add_action('init','csidebars_theme_options_page');
+	if ( (isset($_REQUEST['page'])) && ($_REQUEST['page'] == 'flexi-content-sidebars') ) {
+		add_action('init', 'csidebars_theme_options_page');
 	}
 }
 
 // Load Sidebar Styles
 // -------------------
 // 1.3.5: changed to wp_enqueue_scripts hook
-add_action('wp_enqueue_scripts','csidebars_queue_styles');
+add_action('wp_enqueue_scripts', 'csidebars_queue_styles');
 function csidebars_queue_styles() {
 
 	$vcssmode = csidebars_get_option('css_mode',true);
@@ -195,7 +206,8 @@ function csidebars_queue_styles() {
 		if (!file_exists($vcssfile)) {$vcssmode = 'adminajax';}
 		else {
 			$vcssurl = plugins_url('content-default.css', __FILE__);
-			wp_enqueue_style('content-sidebars-css',$vcssurl);
+			// 1.6.1: remove doubled css suffix
+			wp_enqueue_style('content-sidebars', $vcssurl);
 		}
 	}
 
@@ -213,7 +225,8 @@ function csidebars_queue_styles() {
 		}
 		if ($vcssmode != 'adminajax') {
 			$vversion = csidebars_get_option('last_saved');
-			wp_enqueue_style('content-sidebars-css', $vcssurl, array(), $vversion);
+			// 1.6.1: remove doubled css suffix
+			wp_enqueue_style('content-sidebars', $vcssurl, array(), $vversion);
 		}
 	}
 
@@ -221,7 +234,8 @@ function csidebars_queue_styles() {
 	if ($vcssmode == 'adminajax') {
 		$vversion = csidebars_get_option('last_saved');
 		$vajaxurl = admin_url('admin-ajax.php').'?action=csidebars_dynamic_css';
-		wp_enqueue_style('content-sidebars-css', $vajaxurl, array(), $vversion);
+		// 1.6.1: remove doubled css suffix
+		wp_enqueue_style('content-sidebars', $vajaxurl, array(), $vversion);
 	}
 }
 
@@ -422,23 +436,25 @@ function csidebars_check_context($vdisable,$vsidebar) {
 // Get Plugin Option
 // -----------------
 // 1.3.5: use global options array
-function csidebars_get_option($vkey,$vfilter=false) {
-	global $vcsidebars;
+// 1.6.1: fix and streamline function
+function csidebars_get_option($vkey, $vfilter=false) {
+	global $vcsidebars, $vcsidebarsdefaults;
 	// $vkey = str_replace('fcs_','',$vkey);
 	if (isset($vcsidebars[$vkey])) {
-		if ( (strstr($vkey,'_fallback')) && ($vcsidebars[$vkey] == 'yes') ) {$vcsidebars[$vkey] = 'fallback';}
-		// 1.5.5: prefix all setting filters with csidebars_
-		if ($vfilter) {
-			// 1.5.5: apply backwards compatible and new filter
-			$vvalue = apply_filters('fcs_'.$vkey,$vcsidebars[$vkey]);
-			return apply_filters('csidebars_'.$vkey,$vvalue);
-		} else {return $vcsidebars[$vkey];}
+		if ( (strstr($vkey, '_fallback')) && ($vcsidebars[$vkey] == 'yes') ) {$vcsidebars[$vkey] = 'fallback';}
+		$vvalue = $vcsidebars[$vkey];
 	} else {
 		// 1.5.9: fallback to default option
-		$vdefaults = csidebars_default_options();
-		if (isset($vdefaults[$vkey])) {return $vdefaults[$vkey];}
-		else {return '';}
+		if (!isset($vcsidebarsdefaults)) {$vcsidebarsdefaults = csidebars_default_options();}
+		if (isset($vcsidebardefaults[$vkey])) {$vvalue = $vcsidebarsdefaults[$vkey];}
+		else {$vvalue = null;}
 	}
+	// 1.5.5: apply backwards compatible and new filter
+	if ($vfilter) {
+		$vvalue = apply_filters('fcs_'.$vkey, $vvalue);
+		$vvalue = apply_filters('csidebars_'.$vkey, $vvalue);
+	}
+	return $vvalue;
 }
 
 // maybe Transfer Old Settings
@@ -1750,6 +1766,8 @@ function csidebars_abovecontent_sidebar() {
 
 	global $vcsidebarsoverrides, $vcsidebarsstate;
 	$vdisable = csidebars_get_option('abovecontent_disable');
+	// 1.6.1: set empty sidebar to avoid warning
+	$vsidebar = '';
 
 	// 1.4.5: check new page contexts
 	$vdisable = csidebars_check_context($vdisable,'abovecontent');
@@ -1806,6 +1824,8 @@ function csidebars_belowcontent_sidebar() {
 
 	global $vcsidebarsoverrides, $vcsidebarsstate;
 	$vdisable = csidebars_get_option('belowcontent_disable');
+	// 1.6.1: set empty sidebar to avoid warning
+	$vsidebar = '';
 
 	// 1.4.5: check new page contexts
 	$vdisable = csidebars_check_context($vdisable,'belowcontent');
@@ -1899,6 +1919,9 @@ function csidebars_shortcode_sidebar3() {return csidebars_shortcode_sidebar('3')
 function csidebars_shortcode_sidebar($vid) {
 	global $post, $vcsidebarsoverrides, $vcsidebarsstate, $vcsidebarsexcerpt;
 
+	// 1.6.1: set empty sidebar to avoid warning
+	$vsidebar = '';
+
 	// 1.4.5: bug out if excerpting
 	if ($vcsidebarsexcerpt) {
 		// normally we do not actually want to output shortcode sidebars in excerpts,
@@ -1927,7 +1950,7 @@ function csidebars_shortcode_sidebar($vid) {
 		$vsidebar = PHP_EOL.'<div id="shortcodesidebar'.$vid.'" class="shortcodesidebar '.$vcsidebarsstate.'sidebar">';
 		$vsidebar .= csidebars_get_sidebar('ShortcodeSidebar'.$vid);
 		$vsidebar .= '</div>'.PHP_EOL;
-	} else {$vsidebar = '';}
+	}
 
 	// apply sidebar output filters
 	// 1.5.5: apply backward compatible and new filter prefix
