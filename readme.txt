@@ -7,7 +7,7 @@ Plugin URI: http://wordquest.org/plugins/content-sidebars/
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 3.0.0
-Tested up to: 4.7
+Tested up to: 4.9.1
 Stable tag: trunk
 
 Give an instant boost to your Layout and Call-to-Action options. Auto-add Sidebars to your Post Content Display, inside and out!
@@ -335,6 +335,12 @@ conditions extremely flexible... we leave it up to your unlimited imagination!
 
 
 == Changelog ==
+
+= 1.6.1 =
+* Update to Freemius SDK 1.2.2.9
+* Update to Wordquest Helper 1.6.9
+* Update to get filtered plugin settings
+* Fix to avoid warnings on empty sidebars
 
 = 1.6.0 =
 * WordPress.Org compliance updates
