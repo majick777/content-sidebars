@@ -457,4 +457,3 @@ To contribute directly to development, fork on Github and do a pull request:
 = Planned Updates/Features =
 * Subcriber Recognition code via Cookie detection option
 * Smart Filters to hide Subscription Widgets from Subscribed Visitors
-
