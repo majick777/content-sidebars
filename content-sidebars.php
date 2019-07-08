@@ -2,18 +2,18 @@
 
 /*
 Plugin Name: Content Sidebars
-Plugin URI: http://wordquest.org/plugins/content-siderbars/
+Plugin URI: http://wordquest.org/plugins/content-sidebars/
 Author: Tony Hayes
 Description: Adds Flexible Dynamic Sidebars to your Content Areas without editing your theme.
-Version: 1.6.2
-Author URI: http://wordquest.org/
+Version: 1.6.5
+Author URI: http://wordquest.org
 GitHub Plugin URI: majick777/content-sidebars
 @fs_premium_only pro-functions.php
 */
 
-/* "Do you like seaside bars? I like seaside bars." */
+/* csidebars_ "Do you like seaside bars? I like seaside bars." */
 
-// TODO: define content sidebar hook definitions for layout manager implementation
+if (!function_exists('add_action')) {exit;}
 
 /*
 // Note, for disambiguation, in the context of this plugin only:
@@ -28,726 +28,482 @@ GitHub Plugin URI: majick777/content-sidebars
 // also helpful: http://hackadelic.com/the-right-way-to-shortcodize-wordpress-widgets
 */
 
+// === Plugin Loader ===
+// - Plugin Options
+// - Plugin Settings
+// - Start Plugin Loader
+// === Plugin Setup ===
+// - Add to Appearance Menu
+// - Appearance Item Redirect
+// - Load Sidebar Styles
+// - AJAX Dynamic CSS Output
+// - Widget Page Styles
+// - Widget Page Message
+// - CSS Hero Integration
+// === Plugin Settings ===
+// - Transfer Old Settings
+// - Process Special Settings
+// - Plugin Settings Page
+// === Plugin Helpers ===
+// - Set Excerpt Page
+// - Set Login State
+// - Set Pageload Context
+// - Get Sidebar Overrides
+// - Get Sidebar Helper
+// - Check Context Helper
+// === Register Sidebars ===
+// - Register Sidebar Helper
+// - Register Content Sidebars
+// - Register Discreet Text Widget
+// === Shortcodes ===
+// - Shortcode Filters
+// - Excerpts with Shortcodes
+// === Login Sidebar ===
+// - Add Login Sidebar
+// - Login Sidebar Output
+// === Member Sidebar ===
+// - Add Member Sidebar
+// - Member Sidebar Output
+// === Above / Below Sidebars ===
+// - Above / Below Sidebar Method Actions
+// - Above Content Sidebar Output
+// - Below Content Sidebar Output
+// - Above / Below Content Filter Method
+// === Shortcode Sidebars ===
+// - Add Shortcode Sidebars 
+// - Shortcode Sidebar Output
+// === InPost Sidebars ===
+// - Add InPost Sidebars
+// - InPost Sidebar Output
+// === Metabox Overrides ===
+// - Add Metaboxes for Post Types
+// - Content Sidebars Metabox
+// - Output Metabox Setting Cell
+// - Update Meta Values on Save
+
+// -----------------
+// Development TODOs
+// -----------------
+// - content sidebar hook definitions for layout manager
+
+
+// ====================
+// --- Plugin Setup ---
+// ====================
+// 1.6.5: updated options to use plugin loader
+
+// --------------
+// Plugin Options
+// --------------
+$defaultcss = file_get_contents(dirname(__FILE__).'/content-sidebars.css');
+$options = array(
+
+	// --- above/below sidebars method ---
+	'abovebelow_method'				=> array('type' => 'hooks/filter', 'default' => 'hooks'),
+
+	// --- template hooks ---
+	'abovecontent_hook'				=> array('type' => 'alphanumeric', 'default' => 'skeleton_before_loop'),
+	'belowcontent_hook'				=> array('type' => 'alphanumeric', 'default' => 'skeleton_after_loop'),
+	'loginsidebar_hook'				=> array('type' => 'alphanumeric', 'default' => 'skeleton_before_header'),
+	'membersidebar_hook'			=> array('type' => 'alphanumeric', 'default' => 'skeleton_after_header'),
+
+	// --- hook priorities ---
+	'abovecontent_priority'			=> array('type' => 'numeric', 'default' => '5'),
+	'belowcontent_priority'			=> array('type' => 'numeric', 'default' => '5'),
+	'loginsidebar_priority'			=> array('type' => 'numeric', 'default' => '5'),
+	'membersidebar_priority'		=> array('type' => 'numeric', 'default' => '5'),
+
+	// --- fallback switches ---
+	'abovecontent_fallback'			=> array('type' => 'output/hide/fallback/nooutput', 'default' => 'output'),
+	'belowcontent_fallback'			=> array('type' => 'output/hide/fallback/nooutput', 'default' => 'output'),
+	'loginsidebar_fallback'			=> array('type' => 'fallback/nooutput', 'default' => 'fallback'),
+	'membersidebar_mode'			=> array('type' => 'fallback/standalone/both', 'default' => 'fallback'),
+
+	// --- post types ---
+	'abovecontent_sidebar_cpts'		=> array('type' => 'special', 'default' => 'page'),
+	'belowcontent_sidebar_cpts'		=> array('type' => 'special', 'default' => 'post'),
+	'login_sidebar_cpts'			=> array('type' => 'special', 'default' => 'post,page'),
+	'member_sidebar_cpts'			=> array('type' => 'special', 'default' => 'post,page'),
+	'inpost_sidebars_cpts'			=> array('type' => 'special', 'default' => 'article'),
+
+	// --- page contexts ---
+	// 1.4.5: added page contexts
+	'abovecontent_sidebar_pages'	=> array('type' => '', 'default' => ''),
+	'belowcontent_sidebar_pages'	=> array('type' => '', 'default' => ''),
+	'login_sidebar_pages'			=> array('type' => '', 'default' => ''),
+	'member_sidebar_pages'			=> array('type' => '', 'default' => ''),
+
+	// --- archive contexts ---
+	// 1.4.5: added archive contexts
+	'abovecontent_sidebar_archives'	=> array('type' => '', 'default' => ''),
+	'belowcontent_sidebar_archives'	=> array('type' => '', 'default' => ''),
+	'login_sidebar_archives'		=> array('type' => '', 'default' => ''),
+	'member_sidebar_archives'		=> array('type' => '', 'default' => ''),
+
+	// --- sidebar disablers ---
+	'loginsidebar_disable'			=> array('type' => 'checkbox', 'default' => ''),
+	'membersidebar_disable'			=> array('type' => 'checkbox', 'default' => ''),
+	'abovecontent_disable'			=> array('type' => 'checkbox', 'default' => ''),
+	'belowcontent_disable'			=> array('type' => 'checkbox', 'default' => ''),
+	'shortcode1_disable'			=> array('type' => 'checkbox', 'default' => ''),
+	'shortcode2_disable'			=> array('type' => 'checkbox', 'default' => ''),
+	'shortcode3_disable'			=> array('type' => 'checkbox', 'default' => ''),
+
+	// --- inpost sidebars ---
+	'inpost1_disable'				=> array('type' => 'checkbox', 'default' => 'yes'),
+	'inpost2_disable'				=> array('type' => 'checkbox', 'default' => 'yes'),
+	'inpost3_disable'				=> array('type' => 'checkbox', 'default' => 'yes'),
+	'inpost_marker'					=> array('type' => 'textarea', 'default' => '</p>'),
+	'inpost_priority'				=> array('type' => 'numeric', 'default' => '100'),
+	'inpost_positiona'				=> array('type' => 'numeric', 'default' => '4'),
+	'inpost_positionb'				=> array('type' => 'numeric', 'default' => '8'),
+	'inpost_positionc'				=> array('type' => 'numeric', 'default' => '12'),
+	// note: the options below are correct values (so that first value = '')
+	'inpost1_float'					=> array('type' => '/none/left/right', 'default' => 'right'),
+	'inpost2_float'					=> array('type' => '/none/left/right', 'default' => 'left'),
+	'inpost3_float'					=> array('type' => '/none/left/right', 'default' => 'right'),
+
+	// --- shortcode options ---
+	'widget_text_shortcodes'		=> array('type' => 'checkbox', 'default' => 'yes'),
+	'widget_title_shortcodes'		=> array('type' => 'checkbox', 'default' => ''),
+	'excerpt_shortcodes'			=> array('type' => 'checkbox', 'default' => ''),
+	'sidebars_in_excerpts'			=> array('type' => 'checkbox', 'default' => ''),
+
+	// --- CSS options ---
+	'css_mode'						=> array('type' => 'default/adminajax/right', 'default' => 'default'),
+	'dynamic_css'					=> array('type' => 'textarea', 'default' => $defaultcss),
+	'last_saved'					=> array('type' => 'special', 'default' => time()),
+
+);
+
+// ---------------
+// Plugin Settings
+// ---------------
+// 1.6.5: updated settings to use plugin loader
+$slug = 'content-sidebars';
+$args = array(
+	// --- Plugin Info ---
+	'slug'			=> $slug,
+	'file'			=> __FILE__,
+	'version'		=> '0.0.1',
+
+	// --- Menus and Links ---
+	'title'			=> 'Content Sidebars',
+	'parentmenu'	=> 'wordquest',
+	'home'			=> 'http://wordquest.org/plugins/content-sidebars/',
+	'support'		=> 'http://wordquest.org/quest-category/'.$slug.'/',
+	// 'share'			=> 'http://wordquest.org/plugins/content-sidebars/#share',
+	'donate'		=> 'https://wordquest.org/contribute/?plugin=content-sidebars',
+	'donatetext'	=> __('Support Content Sidebars'),
+	'welcome'		=> '',	// TODO
+
+	// --- Options ---
+	'namespace'		=> 'csidebars',
+	'option'		=> 'content_sidebars',
+	'options'		=> $options,
+	'settings'		=> 'fcs',
+
+	// --- WordPress.Org ---
+	'wporgslug'		=> 'content-sidebars',
+	'textdomain'	=> 'csidebars',
+	'wporg'			=> false,
+
+	// --- Freemius ---
+	'freemius_id'	=> '163',
+	'freemius_key'	=> 'pk_386ac55ea05fcdcd4daf27798b46c',
+	'hasplans'		=> false,
+	'hasaddons'		=> false,
+	'plan'			=> 'free',
+);
+
+// ----------------------------
+// Start Plugin Loader Instance
+// ----------------------------
+require(dirname(__FILE__).DIRECTORY_SEPARATOR.'loader.php');
+new csidebars_loader($args);
+
+
 // --------------------
 // === Plugin Setup ===
 // --------------------
 
-// -----------------
-// Set Plugin Values
-// -----------------
-global $wordquestplugins, $csidebarsslug, $vcsidebarsversion;
-$vslug = $vcsidebarsslug = 'content-sidebars';
-$wordquestplugins[$vslug]['version'] = $vcsidebarsversion = '1.6.2';
-$wordquestplugins[$vslug]['title'] = 'Content Sidebars';
-$wordquestplugins[$vslug]['namespace'] = 'csidebars';
-$wordquestplugins[$vslug]['settings'] = $vpre = 'fcs';
-$wordquestplugins[$vslug]['hasplans'] = false;
-$wordquestplugins[$vslug]['wporgslug'] = 'content-sidebars';
-
-// ------------------------
-// Check for Update Checker
-// ------------------------
-// note: lack of updatechecker.php file indicates WordPress.Org SVN version
-// presence of updatechecker.php indicates site download or GitHub version
-$vfile = __FILE__; $vupdatechecker = dirname($vfile).'/updatechecker.php';
-if (!file_exists($vupdatechecker)) {$wordquestplugins[$vslug]['wporg'] = true;}
-else {include($vupdatechecker); $wordquestplugins[$vslug]['wporg'] = false;}
-
-// ---------------------------
-// maybe Load WordQuest Helper
-// ---------------------------
-// 1.6.2: require PHP 5.3+ for WQ Library
-if (version_compare(PHP_VERSION, '5.3.0') >= 0) {
-	$wordquest = dirname(__FILE__).'/wordquest.php';
-	if ( (file_exists($wordquest)) && (is_admin()) ) {include($wordquest);}
-}
-
-// ------------------------
-// Maybe Load Pro Functions
-// ------------------------
-$vprofunctions = dirname(__FILE__).'/pro-functions.php';
-if (file_exists($vprofunctions)) {include($vprofunctions); $wordquestplugins[$vslug]['plan'] = 'premium';}
-else {$wordquestplugins[$vslug]['plan'] = 'free';}
-
-// -------------
-// Load Freemius
-// -------------
-function csidebars_freemius($vslug) {
-    global $wordquestplugins, $csidebars_freemius;
-    $vwporg = $wordquestplugins[$vslug]['wporg'];
-	if ($wordquestplugins[$vslug]['plan'] == 'premium') {$vpremium = true;} else {$vpremium = false;}
-	$vhasplans = $wordquestplugins[$vslug]['hasplans'];
-
-	// redirect for support forum
-	if ( (is_admin()) && (isset($_REQUEST['page'])) ) {
-		if ($_REQUEST['page'] == $vslug.'-wp-support-forum') {
-			if (!function_exists('wp_redirect')) {include(ABSPATH.WPINC.'/pluggable.php');}
-			wp_redirect('http://wordquest.org/quest/quest-category/plugin-support/'.$vslug.'/'); exit;
-		}
-	}
-
-    if (!isset($csidebars_freemius)) {
-
-        // start the Freemius SDK
-        if (!class_exists('Freemius')) {
-        	$vfreemiuspath = dirname(__FILE__).'/freemius/start.php';
-        	if (!file_exists($vfreemiuspath)) {return;}
-        	require_once($vfreemiuspath);
-        }
-
-		// 1.6.1: added type plugin to settings
-		$csidebars_settings = array(
-            'id'                => '163',
-            'slug'              => $vslug,
-            'type'				=> 'plugin',
-            'public_key'        => 'pk_386ac55ea05fcdcd4daf27798b46c',
-            'is_premium'        => $vpremium,
-            'has_addons'        => false,
-            'has_paid_plans'    => $vhasplans,
-            'is_org_compliant'  => $vwporg,
-            'menu'              => array(
-                'slug'       	=> $vslug,
-                'first-path' 	=> 'admin.php?page='.$vslug.'&welcome=true',
-                'parent'		=> array('slug'=>'wordquest'),
-                'contact'		=> $vpremium,
-                // 'support'    	=> false,
-                // 'account'    	=> false,
-            )
-        );
-        $csidebars_freemius = fs_dynamic_init($csidebars_settings);
-    }
-    return $csidebars_freemius;
-}
-// initialize Freemius
-if (version_compare(PHP_VERSION, '5.4.0') >= 0) {
-	$csidebars_freemius = csidebars_freemius($vslug);
-}
-
-// Custom Freemius Connect Message
-// -------------------------------
-function csidebars_freemius_connect($message, $user_first_name, $plugin_title, $user_login, $site_link, $freemius_link) {
-	return sprintf(
-		__fs('hey-x').'<br>'.
-		__("If you want to more easily provide feedback for this plugins features and functionality, %s can connect your user, %s at %s, to %s", 'csidebars'),
-		$user_first_name, '<b>'.$plugin_title.'</b>', '<b>'.$user_login.'</b>', $site_link, $freemius_link
-	);
-}
-// 1.5.9: add object and method exists checks
-if ( (is_object($csidebars_freemius)) && (method_exists($csidebars_freemius,'add_filter')) ) {
-	$csidebars_freemius->add_filter('connect_message', 'csidebars_freemius_connect', WP_FS__DEFAULT_PRIORITY, 6);
-}
-
-// Add Admin Page
-// --------------
-add_action('admin_menu','csidebars_settings_menu',1);
-function csidebars_settings_menu() {
-
-	// maybe add Wordquest top level menu
-	if (empty($GLOBALS['admin_page_hooks']['wordquest'])) {
-		$vicon = plugins_url('images/wordquest-icon.png',__FILE__); $vposition = apply_filters('wordquest_menu_position','3');
-		add_menu_page('WordQuest Alliance', 'WordQuest', 'manage_options', 'wordquest', 'wqhelper_admin_page', $vicon, $vposition);
-	}
-
-	// add plugin submenu
-	add_submenu_page('wordquest', 'Content Sidebars', 'Content Sidebars', 'manage_options', 'content-sidebars', 'csidebars_options_page');
-
-	// add icons and styling to the plugin submenu :-)
-	add_action('admin_footer','csidebars_admin_javascript');
-	function csidebars_admin_javascript() {
-		global $vcsidebarsslug; $vslug = $vcsidebarsslug; $vcurrent = '0';
-		$vicon = plugins_url('images/icon.png',__FILE__);
-		if ( (isset($_REQUEST['page'])) && ($_REQUEST['page'] == $vslug) ) {$vcurrent = '1';}
-		echo "<script>jQuery(document).ready(function() {if (typeof wordquestsubmenufix == 'function') {
-		wordquestsubmenufix('".$vslug."','".$vicon."','".$vcurrent."');} });</script>";
-	}
-
-	// add Plugin Settings Link
-	add_filter('plugin_action_links', 'csidebars_register_plugin_links', 10, 2);
-	function csidebars_register_plugin_links($vlinks, $vfile) {
-		global $vcsidebarsslug;
-		$vthisplugin = plugin_basename(__FILE__);
-		if ($vfile == $vthisplugin) {
-			$vsettingslink = "<a href='".admin_url('admin.php')."?page=".$vcsidebarsslug."'>".__('Settings','csidebars')."</a>";
-			array_unshift($vlinks, $vsettingslink);
-		}
-		return $vlinks;
-	}
-
-}
-
-// add Appearance menu too (as relevant)
-// -----------------------
+// ----------------------
+// Add to Appearance Menu
+// ----------------------
+// (as relevant to plugin)
 add_action('admin_menu','csidebars_theme_options_menu');
 function csidebars_theme_options_menu() {
 	add_theme_page('Content Sidebars', 'Content Sidebars', 'manage_options', 'flexi-content-sidebars', 'csidebars_theme_options_dummy');
 	function csidebars_theme_options_dummy() {} // dummy menu item function
 }
-// appearance menu item redirect
+
+// -----------------------------
+// Appearance Menu Item Redirect
+// -----------------------------
+// 1.6.5: check redirect trigger internally
+add_action('init', 'csidebars_theme_options_page');
 function csidebars_theme_options_page() {
-	global $vcsidebarsslug; wp_redirect(admin_url('admin.php').'?page='.$vcsidebarsslug);
-}
-// trigger redirect to real admin menu item
-if (strstr($_SERVER['REQUEST_URI'],'/themes.php')) {
-	if ( (isset($_REQUEST['page'])) && ($_REQUEST['page'] == 'flexi-content-sidebars') ) {
-		add_action('init', 'csidebars_theme_options_page');
-	}
+	global $csidebars;
+	// --- check for redirect trigger to real admin menu item ---
+	if (!strstr($_SERVER['REQUEST_URI'],'/themes.php')) {return;}
+	if (!isset($_REQUEST['page']) || ($_REQUEST['page'] != 'flexi-content-sidebars')) {return;}
+	wp_redirect(admin_url('admin.php').'?page='.$csidebars['slug']);
 }
 
+// -------------------
 // Load Sidebar Styles
 // -------------------
 // 1.3.5: changed to wp_enqueue_scripts hook
-add_action('wp_enqueue_scripts', 'csidebars_queue_styles');
-function csidebars_queue_styles() {
+add_action('wp_enqueue_scripts', 'csidebars_enqueue_styles');
+function csidebars_enqueue_styles() {
 
-	$vcssmode = csidebars_get_option('css_mode',true);
+	$cssmode = csidebars_get_setting('css_mode', true);
 
-	if ( ($vcssmode == 'direct') || ($vcssmode == 'dynamic') ) {
+	if ( ($cssmode == 'direct') || ($cssmode == 'dynamic') ) {
 	 	// 1.4.5: added direct URL load option as new default
 		// 1.5.6: check/write exact ABSPATH for safe wp-load
 		// 1.5.7: only write single require line to wp-loader.php
 		// 1.5.8: remove direct dynamic PHP to CSS mode
-		$vcssmode = 'write';
+		$cssmode = 'write';
 	}
 
-	if ($vcssmode == 'default') {
+	if ($cssmode == 'default') {
 		// 1.5.8: added check for default style file just in case
-		$vcssfile = dirname(__FILE__).'/content-default.css';
-		if (!file_exists($vcssfile)) {$vcssmode = 'adminajax';}
+		$cssfile = dirname(__FILE__).'/content-default.css';
+		if (!file_exists($cssfile)) {$cssmode = 'adminajax';}
 		else {
-			$vcssurl = plugins_url('content-default.css', __FILE__);
+			$cssurl = plugins_url('content-default.css', __FILE__);
 			// 1.6.1: remove doubled css suffix
-			wp_enqueue_style('content-sidebars', $vcssurl);
+			wp_enqueue_style('content-sidebars', $cssurl);
 		}
 	}
 
-	if ($vcssmode == 'write') {
+	if ($cssmode == 'write') {
 		// 1.5.6: added write/check method
-		$vcssfile = dirname(__FILE__).'/content-sidebars.css';
-		$vcssurl = plugins_url('content-sidebars.css', __FILE__);
-		$vcss = csidebars_get_option('dynamic_css',true);
-		if (file_get_contents($vcssfile) != $vcss) {
-			// rewrite the file as saved the CSS has changed
-			// 1.5.7: check the WP Filesystem before writing
-			$vcheckmethod = get_filesystem_method(array(), $vdirpath, false);
-			if ($vcheckmethod !== 'direct') {$vcssmode = 'adminajax';}
-			else {$vfh = fopen($vcssfile,'w'); fwrite($vfh,$vcss); fclose($vfh);}
-		}
-		if ($vcssmode != 'adminajax') {
-			$vversion = csidebars_get_option('last_saved');
+		$cssfile = dirname(__FILE__).'/content-sidebars.css';
+		$cssurl = plugins_url('content-sidebars.css', __FILE__);
+		$css = csidebars_get_setting('dynamic_css',true);
+		// 1.6.5: added check if file exists before checking contents
+		if (file_exists($cssfile)) {
+			if (file_get_contents($cssfile) != $css) {
+				// --- rewrite the file as the CSS has changed ---
+				// 1.5.7: check the WP Filesystem before writing
+				$checkmethod = get_filesystem_method(array(), $dirpath, false);
+				if ($checkmethod !== 'direct') {$cssmode = 'adminajax';}
+				else {$fh = fopen($cssfile,'w'); fwrite($fh, $css); fclose($fh);}
+			}
+		} else {$cssmode = 'adminajax';}
+		if ($cssmode != 'adminajax') {
+			$version = csidebars_get_setting('last_saved');
 			// 1.6.1: remove doubled css suffix
-			wp_enqueue_style('content-sidebars', $vcssurl, array(), $vversion);
+			wp_enqueue_style('content-sidebars', $cssurl, array(), $version);
 		}
 	}
 
-	// 1.5.7: AJAX mode also used as fallback
-	if ($vcssmode == 'adminajax') {
-		$vversion = csidebars_get_option('last_saved');
-		$vajaxurl = admin_url('admin-ajax.php').'?action=csidebars_dynamic_css';
+	// --- AJAX method ---
+	// 1.5.7: use AJAX mode as fallback
+	if ($cssmode == 'adminajax') {
+		$version = csidebars_get_setting('last_saved');
+		$ajaxurl = admin_url('admin-ajax.php').'?action=csidebars_dynamic_css';
 		// 1.6.1: remove doubled css suffix
-		wp_enqueue_style('content-sidebars', $vajaxurl, array(), $vversion);
+		wp_enqueue_style('content-sidebars', $ajaxurl, array(), $version);
 	}
 }
 
+// -----------------------------
 // Check File System Credentials
 // -----------------------------
-// function csidebars_filesystem_check_creds($vurl, $vmethod, $vcontext, $vextrafields) {
+// function csidebars_filesystem_check_creds($url, $method, $context, $extrafields) {
 //	global $wp_filesystem;
 //	if (empty($wp_filesystem)) {
-//		$vfilefunctions = ABSPATH.'/wp-admin/includes/file.php';
-//		if (!file_exists($vfilefunctions)) {return false;}
-//		else {require_once($vfilefunctions); WP_Filesystem();}
+//		$filefunctions = ABSPATH.'/wp-admin/includes/file.php';
+//		if (!file_exists($filefunctions)) {return false;}
+//		else {require_once($filefunctions); WP_Filesystem();}
 //	}
-//	$vcredentials = request_filesystem_credentials($vurl, $vmethod, false, $vcontext, $vextrafields);
-//	if ($vcredentials === false) {return false;}
-//	if (!WP_Filesystem($vcredentials)) {return false;}
+//	$credentials = request_filesystem_credentials($url, $method, false, $context, $extrafields);
+//	if ($credentials === false) {return false;}
+//	if (!WP_Filesystem($credentials)) {return false;}
 //	return true;
 // }
 
+// -----------------------
 // AJAX Dynamic CSS Output
 // -----------------------
 add_action('wp_ajax_csidebars_dynamic_css', 'csidebars_dynamic_css');
 add_action('wp_ajax_nopriv_csidebars_dynamic_css', 'csidebars_dynamic_css');
-function csidebars_dynamic_css() {require(dirname(__FILE__).'/content-sidebars-css.php'); exit;}
+function csidebars_dynamic_css() {
+	// 1.6.5: fix for AJAX method to load CSS setting
+	// require(dirname(__FILE__).'/content-sidebars-css.php');
+	$styles = csidebar_get_setting('dynamic_css');
+	header("Content-type: text/css; charset: UTF-8");
+	echo $styles; exit;
+}
 
+// ------------------
 // Widget Page Styles
 // ------------------
 // 1.4.0: style the sidebar on widget page
-if (is_admin() && ($pagenow == 'widgets.php')) {
-	add_action('admin_head','csidebars_widget_page_styles');
-	function csidebars_widget_page_styles() {
-		echo "<style>.sidebar-content-on {background-color:#E9F0FF;} .sidebar-content-on h2 {font-size: 12pt;}
-		.sidebar-content-off {background-color:#EFF3FF;} .sidebar-content-off h2 {font-weight: normal; font-size: 10pt;}</style>";
-	}
+// 1.6.5: check/fix to widget styles page conditions
+add_action('admin_head', 'csidebars_widget_page_styles');
+function csidebars_widget_page_styles() {
+	global $pagenow; if ($pagenow != 'widgets.php') {return;}
+	echo "<style>.sidebar-content-on {background-color:#E9F0FF;} .sidebar-content-on h2 {font-size: 12pt;}
+	.sidebar-content-off {background-color:#EFF3FF;} .sidebar-content-off h2 {font-weight: normal; font-size: 10pt;}</style>";
 }
 
+// -------------------
 // Widget Page Message
 // -------------------
-add_action('widgets_admin_page','csidebars_widget_page_message',11);
+add_action('widgets_admin_page', 'csidebars_widget_page_message', 11);
 function csidebars_widget_page_message() {
-	$vmessage = __('Note: Inactive Content Sidebars are listed with lowercase titles. Activate them via Content Sidebars settings.', 'csidebars');
-	echo "<div class='message'>".$vmessage."</div>";
+	$message = "<b>".__('Note', 'csidebars')."</b>: ";
+	$message .= __('Inactive Content Sidebars are listed with lowercase titles. Activate them via Content Sidebars settings page.', 'csidebars');
+	echo "<div class='message'>".$message."</div>";
 }
 
+// --------------------
 // CSS Hero Integration
 // --------------------
 // 1.3.0: added CSS Hero script workaround
-// TODO: test in combination with theme declarations?
-if ( (isset($_GET['csshero_action'])) && ($_GET['csshero_action'] == 'edit_page') ) {
-	// add_action('wp_loaded','csidebars_csshero_script_dir',1);
-	function csidebars_csshero_script_dir() {
-		add_filter('stylesheet_directory_uri','csidebars_csshero_script_url',11,3);
-		function csidebars_csshero_script_url($stylesheet_dir_uri, $stylesheet, $theme_root_uri) {
-			$vcsshero = dirname(__FILE__);
-			if (file_exists($vcsshero.'/csshero.js')) {
-				$vcssherouri = plugins_url('',__FILE__);
-				// workaround to add additional script URL
-				$stylesheet_dir_uri .= "/csshero.js'><script type='text/javascript' src='".$vcssherouri; // '
-			}
-			return $stylesheet_dir_uri;
+// TODO: retest in combination with theme CSS Hero integration ?
+// add_action('wp_loaded', 'csidebars_csshero_script_dir', 1);
+function csidebars_csshero_script_dir() {
+
+	// 1.6.5: moved trigger check internally
+	if (!isset($_GET['csshero_action']) || ($_GET['csshero_action'] != 'edit_page')) {return;}
+
+	add_filter('stylesheet_directory_uri', 'csidebars_csshero_script_url', 11, 3);
+
+	function csidebars_csshero_script_url($stylesheet_dir_url, $stylesheet, $theme_root_uri) {
+		$csshero = dirname(__FILE__);
+		if (file_exists($csshero.'/csshero.js')) {
+			$cssherourl = plugins_url('', __FILE__);
+			// --- workaround to add additional script URL ---
+			$stylesheet_dir_url .= "/csshero.js'><script type='text/javascript' src='".$cssherourl; // '
 		}
+		return $stylesheet_dir_url;
 	}
 }
 
 
-// -------------------
-// === Load Plugin ===
-// -------------------
+// -----------------------
+// === Plugin Settings ===
+// -----------------------
+// 1.6.5: use common settings functions in plugin loader
 
-// 1.3.5: get global plugin options
-global $vcsidebars; $vcsidebars = get_option('content_sidebars');
-// print_r($vcsidebarsoptions); // debug point
-
-// set Excerpt State Filters
-// -------------------------
-// 1.4.5: added to better handle excerpt output
-global $vcsidebarsexcerpt; $vcsidebarsexcerpt = false;
-add_filter('get_the_excerpt', 'csidebars_doing_excerpt_on', 0);
-add_filter('get_the_excerpt', 'csidebars_doing_excerpt_off', 999);
-function csidebars_doing_excerpt_on($vexcerpt) {global $vcsidebarsexcerpt; $vcsidebarsexcerpt = true; return $vexcerpt;}
-function csidebars_doing_excerpt_off($vexcerpt) {global $vcsidebarsexcerpt; $vcsidebarsexcerpt = false; return $vexcerpt;}
-
-// set Login State
-// ---------------
-// 1.3.5: set login state once for efficiency
-global $vcsidebarsstate;
-add_action('init', 'csidebars_set_login_state');
-function csidebars_set_login_state() {
-	global $vcsidebarsstate; $current_user = wp_get_current_user();
-	if ($current_user->exists()) {$vcsidebarsstate = 'loggedin';}
-	else {$vcsidebarsstate = 'loggedout';}
-}
-
-// Set Pageload Context
-// --------------------
-// 1.4.5: added this once-off context checker
-add_action('wp', 'csidebars_set_page_context');
-function csidebars_set_page_context() {
-	global $vcsidebarscontext, $vcsidebarsarchive;
-	$vcsidebarscontext = ''; $vcsidebarsarchive = '';
-	if (is_front_page()) {$vcsidebarscontext = 'frontpage';}
-	elseif (is_home()) {$vcsidebarscontext = 'home';}
-	elseif (is_404()) {$vcsidebarscontext = '404';}
-	elseif (is_search()) {$vcsidebarscontext = 'search';}
-	elseif (is_singular()) {$vcsidebarscontext = 'singular';}
-	elseif (is_archive()) {
-		$vcsidebarscontext = 'archive';
-		if (is_tag()) {$vcsidebarsarchive = 'tag';}
-		elseif (is_category()) {$vcsidebarsarchive = 'category';}
-		elseif (is_tax()) {$vcsidebarsarchive = 'taxonomy';}
-		elseif (is_author()) {$vcsidebarsarchive = 'author';}
-		elseif (is_date()) {$vcsidebarsarchive = 'date';}
-	}
-}
-
-// Get Sidebar Overrides
 // ---------------------
-add_action('init', 'csidebars_get_overrides');
-function csidebars_get_overrides() {
-	global $post, $vcsidebarsoverrides;
-	if (is_object($post)) {
-		$vpostid = $post->ID;
-		$vcsidebarsoverrides = get_post_meta($vpostid, 'content_sidebars', true);
-
-		// maybe set new key value, checking for existing disable metakeys
-		if (!$vcsidebarsoverrides) {
-			$voptionkeys = array(
-				'abovecontentsidebar','belowcontentsidebar','loginsidebar','membersidebar',
-				'shortcodesidebar1','shortcodesidebar2','shortcodesidebar3',
-				'inpostsidebar1','inpostsidebar2','inpostsidebar3'
-			);
-			foreach ($voptionkeys as $voptionkey) {
-				$vnewkey = str_replace('sidebar','',$voptionkey);
-				if (get_post_meta($vpostid,'_disable'.$voptionkey,true) == 'yes') {
-					$vcsidebarsoverrides[$vnewkey] = 'disable';
-				} else {$vcsidebarsoverrides[$vnewkey] = '';}
-			}
-			add_post_meta($vpostid,'content_sidebars',$vcsidebarsoverrides,true);
-		}
-	}
-}
-
-// Get Sidebar Helper
-// ------------------
-function csidebars_get_sidebar($vsidebar) {
-	ob_start();
-	// $index = ( is_int($vsidebar) ) ? "sidebar-$vsidebar" : sanitize_title($vsidebar);
-	// echo "***".$index."***"; // debug point
-	dynamic_sidebar($vsidebar);
-	$vsidebarcontents = ob_get_contents();
-	ob_end_clean();
-	return $vsidebarcontents;
-}
-
-// Check Context Helper
-// --------------------
-function csidebars_check_context($vdisable,$vsidebar) {
-	global $vcsidebarscontext, $vcsidebarsarchive;
-
-	$vdisablein = $vdisable;
-	if ($vcsidebarscontext == 'singular') {
-		// maybe disable if sidebar not active for this CPT
-		global $post; $vpostid = $post->ID; $vposttype = get_post_type($vpostid);
-		$vcptoptions = csidebars_get_option($vsidebar.'_sidebar_cpts', true);
-		if (strstr($vcptoptions, ',')) {$vactivecpts = explode(',', $vcptoptions);}
-		else {$vactivecpts[0] = $vcptoptions;}
-	 	if (!in_array($vposttype,$vactivecpts)) {$vdisable = 'yes';}
-	 	$vdebug = 'Post Type: '.$vposttype.' in '.$vcptoptions;
-	} elseif ($vcsidebarscontext == 'archive') {
-		// maybe disable if sidebar not active for this archive
-		$varchiveoptions = csidebars_get_option($vsidebar.'_sidebar_archives');
-		if (strstr($varchiveoptions, ',')) {$varchives = explode(',', $varchiveoptions);}
-		else {$varchives[0] = $varchiveoptions;}
-		if (!in_array('archive',$varchives)) {
-			if (!in_array($vcsidebarsarchive, $varchives)) {$vdisable = 'yes';}
-		}
-		$vdebug = 'Archive: '.$vcsidebarsarchive.' in '.$varchiveoptions;
-	} elseif ($vcsidebarscontext != '') {
-		// maybe disable if sidebar not active for this context
-		$vpageoptions = csidebars_get_option($vsidebar.'_sidebar_pages');
-		if (strstr($vpageoptions,',')) {$vcontexts = explode(',', $vpageoptions);}
-		else {$vcontexts[0] = $vpageoptions;}
-		if (!in_array($vcsidebarscontext, $vcontexts)) {$vdisable = 'yes';}
-		$vdebug = 'Page Context: '.$vcsidebarscontext.' in '.$vpageoptions;
-	} else {$vdisable = 'yes';}
-
-	// debug point for disable change
-	if ($vdisablein != $vdisable) {
-		// echo "<!-- ".$vsidebar." sidebar disabled (".$vdebug.") -->";
-	}
-
-	return $vdisable;
-}
-
-// --------------
-// Plugin Options
-// --------------
-
-// Get Plugin Option
-// -----------------
-// 1.3.5: use global options array
-// 1.6.1: fix and streamline function
-function csidebars_get_option($vkey, $vfilter=false) {
-	global $vcsidebars, $vcsidebarsdefaults;
-	// $vkey = str_replace('fcs_','',$vkey);
-	if (isset($vcsidebars[$vkey])) {
-		if ( (strstr($vkey, '_fallback')) && ($vcsidebars[$vkey] == 'yes') ) {$vcsidebars[$vkey] = 'fallback';}
-		$vvalue = $vcsidebars[$vkey];
-	} else {
-		// 1.5.9: fallback to default option
-		if (!isset($vcsidebarsdefaults)) {$vcsidebarsdefaults = csidebars_default_options();}
-		if (isset($vcsidebardefaults[$vkey])) {$vvalue = $vcsidebarsdefaults[$vkey];}
-		else {$vvalue = null;}
-	}
-	// 1.5.5: apply backwards compatible and new filter
-	if ($vfilter) {
-		$vvalue = apply_filters('fcs_'.$vkey, $vvalue);
-		$vvalue = apply_filters('csidebars_'.$vkey, $vvalue);
-	}
-	return $vvalue;
-}
-
-// maybe Transfer Old Settings
-// ---------------------------
+// Transfer Old Settings
+// ---------------------
 // 1.3.5: compact old settings into global array
-if ( (get_option('fcs_abovebelow_method')) && (!get_option('content_sidebars')) ) {
-	$vfcsoptionkeys = array(
-		'abovebelow_method', 'abovecontent_hook', 'belowcontent_hook', 'loginsidebar_hook', 'membersidebar_hook',
-		'abovecontent_priority', 'belowcontent_priority', 'loginsidebar_priority', 'membersidebar_priority',
-		'abovecontent_fallback', 'belowcontent_fallback', 'loginsidebar_fallback', 'membersidebar_mode',
-		'abovecontent_sidebar_cpts', 'belowcontent_sidebar_cpts', 'inpost_sidebars_cpts', 'member_sidebar_cpts',
-		'abovecontent_sidebar_pages', 'belowcontent_sidebar_pages', 'login_sidebar_pages', 'member_sidebar_pages',
-		'abovecontent_sidebar_archives', 'belowcontent_sidebar_archives', 'login_sidebar_archives', 'member_sidebar_archives',
-		'loginsidebar_disable', 'membersidebar_disable', 'abovecontent_disable', 'belowcontent_disable',
-		'widget_text_shortcodes', 'widget_title_shortcodes', 'excerpt_shortcodes', 'sidebars_in_excerpts',
-		'shortcode1_disable', 'shortcode2_disable', 'shortcode3_disable',
-		'inpost1_disable', 'inpost2_disable', 'inpost3_disable', 'inpost_marker', 'inpost_priority',
-		'inpost_positiona', 'inpost_positionb', 'inpost_positionc', 'inpost1_float', 'inpost2_float', 'inpost3_float',
-		'css_mode', 'dynamic_css');
+// 1.6.5: set function for usage via plugin loader
+function csidebars_transfer_settings() {
+	if (get_option('fcs_abovebelow_method') && !get_option('content_sidebars')) {
 
-	foreach ($vfcsoptionkeys as $vkey) {
-		$vcsidebarsoptions[$vkey] = get_option('fcs_'.$vkey);
-		// 1.4.0: convert old fallback value
-		if ( (strstr($vkey,'_fallback')) && ($vcsidebarsoptions[$vkey] == 'yes') ) {$vcsidebars[$vkey] = 'fallback';}
+		// --- set option keys ---
+		$optionkeys = array(
+			'abovebelow_method', 'abovecontent_hook', 'belowcontent_hook', 'loginsidebar_hook', 'membersidebar_hook',
+			'abovecontent_priority', 'belowcontent_priority', 'loginsidebar_priority', 'membersidebar_priority',
+			'abovecontent_fallback', 'belowcontent_fallback', 'loginsidebar_fallback', 'membersidebar_mode',
+			'abovecontent_sidebar_cpts', 'belowcontent_sidebar_cpts', 'inpost_sidebars_cpts', 'member_sidebar_cpts',
+			'abovecontent_sidebar_pages', 'belowcontent_sidebar_pages', 'login_sidebar_pages', 'member_sidebar_pages',
+			'abovecontent_sidebar_archives', 'belowcontent_sidebar_archives', 'login_sidebar_archives', 'member_sidebar_archives',
+			'loginsidebar_disable', 'membersidebar_disable', 'abovecontent_disable', 'belowcontent_disable',
+			'widget_text_shortcodes', 'widget_title_shortcodes', 'excerpt_shortcodes', 'sidebars_in_excerpts',
+			'shortcode1_disable', 'shortcode2_disable', 'shortcode3_disable',
+			'inpost1_disable', 'inpost2_disable', 'inpost3_disable', 'inpost_marker', 'inpost_priority',
+			'inpost_positiona', 'inpost_positionb', 'inpost_positionc', 'inpost1_float', 'inpost2_float', 'inpost3_float',
+			'css_mode', 'dynamic_css');
+
+		// --- loop and transfer settings ---
+		foreach ($optionkeys as $key) {
+			$csidebars[$key] = get_option('fcs_'.$key);
+			// 1.4.0: convert old fallback value
+			if ( (strstr($key, '_fallback')) && ($csidebars[$key] == 'yes')) {$csidebars[$key] = 'fallback';}
+		}
+		$csidebars['last_saved'] = time();
+
+		add_option('content_sidebars', $csidebars);
 	}
-	$vcsidebars['last_saved'] = time();
-
-	if (add_option('content_sidebars',$vcsidebars)) {
-		foreach ($vfcsoptionkeys as $vkey) {delete_option('fcs_'.$vkey);}
-	}
 }
 
-// Add Plugin Options
-// ------------------
-register_activation_hook(__FILE__,'csidebars_add_options');
 
-// 1.3.5: use global options array
-function csidebars_add_options() {
-
-	global $vcsidebars, $vcsidebarsslug, $wordquestplugins;
-
-	// 1.5.9: use default options function
-	$vcsidebars = csidebars_default_options();
-
-	// add global option array
-	add_option('content_sidebars',$vcsidebars);
-
-	// sidebar options
-	if (file_exists(dirname(__FILE__).'/updatechecker.php')) {$vadsboxoff = '';} else {$vadsboxoff = 'checked';}
-	$sidebaroptions = array('adsboxoff'=>$vadsboxoff,'donationboxoff'=>'','reportboxoff'=>'','installdate'=>date('Y-m-d'));
-	$vpre = $wordquestplugins[$vcsidebarsslug]['settings'];
-	add_option($vpre.'_sidebar_options',$sidebaroptions);
-}
-
-// get Default Options
-// -------------------
-// 1.5.9: separate default options function
-function csidebars_default_options() {
-
-	// method
-	// 1.5.7: fix to global variable name
-	$vcsidebars['abovebelow_method'] = 'hooks';
-
-	// template hooks
-	$vcsidebars['abovecontent_hook'] = 'skeleton_before_loop';
-	$vcsidebars['belowcontent_hook'] = 'skeleton_after_loop';
-	$vcsidebars['loginsidebar_hook'] = 'skeleton_before_header';
-	$vcsidebars['membersidebar_hook'] = 'skeleton_after_header';
-
-	// hook priorities
-	$vcsidebars['abovecontent_priority'] = '5';
-	$vcsidebars['belowcontent_priority'] = '5';
-	$vcsidebars['loginsidebar_priority'] = '5';
-	$vcsidebars['membersidebar_priority'] = '5';
-
-	// fallback switches
-	$vcsidebars['abovecontent_fallback'] = '';
-	$vcsidebars['belowcontent_fallback'] = '';
-	$vcsidebars['loginsidebar_fallback'] = 'fallback';
-	$vcsidebars['membersidebar_mode'] = 'fallback';
-
-	// post types
-	$vcsidebars['abovecontent_sidebar_cpts'] = 'page';
-	$vcsidebars['belowcontent_sidebar_cpts'] = 'post';
-	$vcsidebars['login_sidebar_cpts'] = 'post,page';
-	$vcsidebars['member_sidebar_cpts'] = 'post,page';
-	$vcsidebars['inpost_sidebars_cpts'] = 'article';
-
-	// 1.4.5: added page contexts
-	$vcsidebars['abovecontent_sidebar_pages'] = '';
-	$vcsidebars['belowcontent_sidebar_pages'] = '';
-	$vcsidebars['login_sidebar_pages'] = '';
-	$vcsidebars['member_sidebar_pages'] = '';
-
-	// 1.4.5: added archive contexts
-	$vcsidebars['abovecontent_sidebar_archives'] = '';
-	$vcsidebars['belowcontent_sidebar_archives'] = '';
-	$vcsidebars['login_sidebar_archives'] = '';
-	$vcsidebars['member_sidebar_archives'] = '';
-
-	// disablers
-	$vcsidebars['loginsidebar_disable'] = '';
-	$vcsidebars['membersidebar_disable'] = '';
-	$vcsidebars['abovecontent_disable'] = '';
-	$vcsidebars['belowcontent_disable'] = '';
-	$vcsidebars['shortcode1_disable'] = '';
-	$vcsidebars['shortcode2_disable'] = '';
-	$vcsidebars['shortcode3_disable'] = '';
-
-	// inpost sidebars
-	$vcsidebars['inpost1_disable'] = 'yes';
-	$vcsidebars['inpost2_disable'] = 'yes';
-	$vcsidebars['inpost3_disable'] = 'yes';
-	$vcsidebars['inpost_marker'] = '</p>';
-	$vcsidebars['inpost_positiona'] = '4';
-	$vcsidebars['inpost_positionb'] = '8';
-	$vcsidebars['inpost_positionc'] = '12';
-	$vcsidebars['inpost1_float'] = 'right';
-	$vcsidebars['inpost2_float'] = 'left';
-	$vcsidebars['inpost3_float'] = 'right';
-	$vcsidebars['inpost_priority'] = '100';
-
-	// shortcode options
-	$vcsidebars['widget_text_shortcodes'] = 'yes';
-	$vcsidebars['widget_title_shortcodes'] = '';
-	$vcsidebars['excerpt_shortcodes'] = '';
-	$vcsidebars['sidebars_in_excerpts'] = '';
-
-	// css options
-	$vdefaultcss = file_get_contents(dirname(__FILE__).'/content-sidebars.css');
-	$vcsidebars['css_mode'] = 'default';
-	$vcsidebars['dynamic_css'] = $vdefaultcss;
-	$vcsidebars['last_saved'] = time();
-
-	return $vcsidebars;
-}
-
-// Reset Options
-// -------------
-// 1.3.5: added reset options function
-if ( (isset($_GET['contentsidebars'])) && ($_GET['contentsidebars'] == 'reset') ) {add_action('init', 'csidebars_reset_options', 0);}
-function csidebars_reset_options() {
-	if (current_user_can('manage_options')) {delete_option('content_sidebars'); csidebars_add_options();}
-}
-
-// Update Options Trigger
-// ----------------------
-if ( (isset($_POST['fcs_update_options'])) && ($_POST['fcs_update_options'] == 'yes') ) {
-	add_action('init', 'csidebars_update_options');
-}
-
-// Update Options
-// --------------
+// --------------------------------
+// Process Special Settings Updates
+// --------------------------------
 // 1.3.5 update to use global options array
-function csidebars_update_options() {
+// 1.5.5: added option data types for saving
+// 1.5.8: remove direct dynamic PHP CSS method option
+// 1.6.5: use plugin loader to save main options
+function csidebars_process_special($settings) {
 
-	if (!current_user_can('manage_options')) {return;}
+	// --- get all the post types ---
+	$cpts = array('post', 'page');
+	$args = array('public' => true, '_builtin' => false);
+	$cptlist = get_post_types($args, 'names', 'and');
+	$cpts = array_merge($cpts, $cptlist);
 
-	// 1.5.0: verify nonce field
-	check_admin_referer('content_sidebars');
-
-	global $vcsidebars;
-
-	// 1.5.5: added option data types for saving
-	// 1.5.8: remove direct dynamic PHP CSS method
-	// update all option keys here except the CPT ones
-	$voptionkeys = array('abovebelow_method' => 'hooks/filter',
-		'abovecontent_hook' => 'alphanumeric', 'belowcontent_hook' => 'alphanumeric',
-		'loginsidebar_hook' => 'alphanumeric', 'membersidebar_hook' => 'alphanumeric',
-		'abovecontent_priority' => 'numeric', 'belowcontent_priority' => 'numeric',
-		'loginsidebar_priority' => 'numeric', 'membersidebar_priority' => 'numeric',
-		'abovecontent_fallback' => 'checkbox', 'belowcontent_fallback' => 'checkbox',
-		'loginsidebar_fallback' => 'checkbox', 'membersidebar_mode' => 'fallback/standalone/both',
-		'membersidebar_disable' => 'checkbox', 'loginsidebar_disable' => 'checkbox',
-		'abovecontent_disable' => 'checkbox', 'belowcontent_disable' => 'checkbox',
-		'widget_text_shortcodes' => 'checkbox', 'widget_title_shortcodes' => 'checkbox',
-		'excerpt_shortcodes' => 'checkbox', 'sidebars_in_excerpts' => 'checkbox',
-		'shortcode1_disable' => 'checkbox', 'shortcode2_disable' => 'checkbox', 'shortcode3_disable' => 'checkbox',
-		'inpost1_disable' => 'checkbox', 'inpost2_disable' => 'checkbox', 'inpost3_disable' => 'checkbox',
-		'inpost_marker' => 'textarea', 'inpost_priority' => 'numeric',
-		'inpost_positiona' => 'numeric', 'inpost_positionb' => 'numeric', 'inpost_positionc' => 'numeric',
-		'inpost1_float' => '/none/left/right', 'inpost2_float' => '/none/left/right', 'inpost3_float' => '/none/left/right',
-		'css_mode' => 'default/adminajax/write', 'dynamic_css' => 'textarea'
-	);
-
-	// 1.5.5: validate option values before saving
-	foreach ($voptionkeys as $vkey => $vtype) {
-		if (isset($_POST['fcs_'.$vkey])) {$vposted = $_POST['fcs_'.$vkey];} else {$vposted = '';}
-		if (strstr($vtype,'/')) {
-			$vvalid = explode('/',$vtype);
-			if (in_array($vposted,$vvalid)) {$vcsidebars[$vkey] = $vposted;}
-			else {$vcsidebars[$vkey] = $vvalid[0];}
-		} elseif ($vtype == 'checkbox') {
-			if ( ($vposted == '') || ($vposted == 'yes') ) {$vcsidebars[$vkey] = $vposted;}
-		} elseif ($vtype == 'numeric') {
-			$vposted = absint($vposted);
-			if (is_numeric($vposted)) {$vcsidebars[$vkey] = $vposted;}
-		} elseif ($vtype == 'alphanumeric') {
-			// TODO: maybe improve on this?
-			$vcheckposted = preg_match('/^[a-zA-Z0-9_]+$/',$vposted);
-			if ($vcheckposted) {$vcsidebars[$vkey] = $vposted;}
-		} elseif ($vtype == 'textarea') {
-			$vposted = stripslashes($vposted);
-			$vcsidebars[$vkey] = $vposted;
+	// --- loop sidebars for CPTs ---
+	// 1.4.5: loop all sidebar post types except shortcodes
+	$sidebars = array('abovecontent', 'belowcontent', 'login', 'member', 'inpost');
+	foreach ($sidebars as $sidebar) {
+		$i = 0; $newcpts = array();
+		foreach ($cpts as $cpt) {
+			$postkey = 'fcs_'.$sidebar.'_posttype_'.$cpt;
+			if (isset($_POST[$postkey]) && ($_POST[$postkey] == 'yes')) {$newcpts[$i] = $cpt; $i++;}
 		}
+		$cptsettings = implode(',', $newcpts);
+		if ($sidebar == 'inpost') {$s = 's';} else {$s = '';}
+		$settings[$sidebar.'_sidebar'.$s.'_cpts'] = $cptsettings;
 	}
 
-	// get all the post types
-	$vcpts[0] = 'post'; $vcpts[1] = 'page';
-	$vargs = array('public' => true, '_builtin' => false);
-	$vcptlist = get_post_types($vargs, 'names', 'and');
-	$vcpts = array_merge($vcpts, $vcptlist);
-
-	// 1.4.5: loop all sidebar post types (but not for shortcodes)
-	$vsidebars = array('abovecontent', 'belowcontent', 'login', 'member', 'inpost');
-	foreach ($vsidebars as $vsidebar) {
-		$vi = 0; $vnewcpts = array();
-		foreach ($vcpts as $vcpt) {
-			$vpostkey = 'fcs_'.$vsidebar.'_posttype_'.$vcpt;
-			if ( (isset($_POST[$vpostkey])) && ($_POST[$vpostkey] == 'yes') ) {$vnewcpts[$vi] = $vcpt; $vi++;}
-		}
-		$vcptoptions = implode(',',$vnewcpts);
-		if ($vsidebar == 'inpost') {$s = 's';} else {$s = '';}
-		$vcsidebars[$vsidebar.'_sidebar'.$s.'_cpts'] = $vcptoptions;
-	}
-
-	// added page and archive contexts
-	$vsidebars = array('abovecontent', 'belowcontent', 'login', 'member');
-	$vcontexts = array('frontpage', 'home', '404', 'search');
+	// --- loop sidebars for page and archive contexts ---
+	$sidebars = array('abovecontent', 'belowcontent', 'login', 'member');
+	$contexts = array('frontpage', 'home', '404', 'search');
 	// 1.5.5: add missing taxonomy key
-	$varchives = array('archive', 'tag', 'category', 'taxonomy', 'author', 'date');
-	foreach ($vsidebars as $vsidebar) {
-		$vi = 0; $vnewpages = array();
-		foreach ($vcontexts as $vcontext) {
-			$vpostkey = 'fcs_'.$vsidebar.'_pagetype_'.$vcontext;
-			if ( (isset($_POST[$vpostkey])) && ($_POST[$vpostkey] == 'yes') ) {$vnewpages[$vi] = $vcontext; $vi++;}
-		}
-		$vpageoptions = implode(',',$vnewpages);
-		$vcsidebars[$vsidebar.'_sidebar_pages'] = $vpageoptions;
+	$archives = array('archive', 'tag', 'category', 'taxonomy', 'author', 'date');
+	foreach ($sidebars as $sidebar) {
 
-		$vi = 0; $vnewarchives = array();
-		foreach ($varchives as $varchive) {
-			$vpostkey = 'fcs_'.$vsidebar.'_archive_'.$varchive;
-			if ( (isset($_POST[$vpostkey])) && ($_POST[$vpostkey] == 'yes') ) {$vnewarchives[$vi] = $varchive; $vi++;}
+		// --- page contexts ---
+		$i = 0; $newpages = array();
+		foreach ($contexts as $context) {
+			$postkey = 'fcs_'.$sidebar.'_pagetype_'.$context;
+			if (isset($_POST[$postkey]) && ($_POST[$postkey] == 'yes')) {$newpages[$i] = $context; $i++;}
 		}
-		$varchiveoptions = implode(',',$vnewarchives);
-		$vcsidebars[$vsidebar.'_sidebar_archives'] = $varchiveoptions;
+		$pageoptions = implode(',', $newpages);
+		$settings[$sidebar.'_sidebar_pages'] = $pageoptions;
+
+		// --- archive contexts ---
+		$i = 0; $newarchives = array();
+		foreach ($archives as $archive) {
+			$postkey = 'fcs_'.$sidebar.'_archive_'.$archive;
+			if (isset($_POST[$postkey]) && ($_POST[$postkey] == 'yes')) {$newarchives[$i] = $archive; $i++;}
+		}
+		$archiveoptions = implode(',', $newarchives);
+		$settings[$sidebar.'_sidebar_archives'] = $archiveoptions;
 	}
 
-	$vcsidebars['last_saved'] = time();
+	// 1.6.5: update last saved time
+	$settings['last_saved'] = time();
 
-	// for debugging save values
-	// ob_start(); echo "POSTED: "; print_r($_POST); echo PHP_EOL."OPTIONS: "; print_r($vcsidebars);
-	// $posted = ob_get_contents(); ob_end_clean();
-	// $fh = fopen(dirname(__FILE__).'/debug-save.txt','w'); fwrite($fh,$posted); fclose($fh);
-
-	update_option('content_sidebars', $vcsidebars);
+	return $settings;
 }
 
-// Options Page
-// ------------
-function csidebars_options_page() {
+// --------------------
+// Plugin Settings Page
+// --------------------
+function csidebars_settings_page() {
 
-	global $vcsidebarsversion, $vcsidebarsslug;
+	global $csidebars;
 
-	// global $vcsidebars; echo "<!-- "; print_r($vcsidebars);} echo " -->";
-
-	echo "<script language='javascript' type='text/javascript'>
-	function loaddefaultcss() {document.getElementById('dynamiccss').value = document.getElementById('defaultcss').value;}
-	function loadcssfile() {document.getElementById('dynamiccss').value = document.getElementById('cssfile').value;}
-	function loadsavedcss() {document.getElementById('dynamiccss').value = document.getElementById('savedcss').value;}</script>";
-
-	echo "<style>.small {font-size:9pt;} .wp-admin select.select {height:24px; line-height:22px; margin-top:-5px;</style>";
-
+	// --- open pagewrap div ---
 	echo '<div id="pagewrap" class="wrap" style="width:100%;margin-right:0px !important;">';
 
-	// Call Plugin Sidebar
-	// -------------------
-	// $vargs = array('fcs','content-sidebars','free','content-sidebars','','Content Sidebars',$vcsidebarsversion);
-	$vargs = array('content-sidebars','yes'); // trimmed settings
+	// Sidebar Floatbox
+	// ----------------
+	$args = array('content-sidebars', 'yes'); // trimmed settings
 	if (function_exists('wqhelper_sidebar_floatbox')) {
-		wqhelper_sidebar_floatbox($vargs);
+		wqhelper_sidebar_floatbox($args);
 
-		// 1.5.5: replace floatbox with stickykit
 		echo wqhelper_sidebar_stickykitscript();
 		echo '<style>#floatdiv {float:right;}</style>';
 		echo '<script>jQuery("#floatdiv").stick_in_parent();
@@ -756,380 +512,359 @@ function csidebars_options_page() {
 		jQuery("#wrapbox").css("width",newwidth+"px");
 		jQuery("#adminnoticebox").css("width",newwidth+"px");
 		</script>';
-
-		// echo wqhelper_sidebar_floatmenuscript();
-		// echo '<script language="javascript" type="text/javascript">
-		// floatingMenu.add("floatdiv", {targetRight: 10, targetTop: 20, centerX: false, centerY: false});
-		// function move_upper_right() {
-		// 	floatingArray[0].targetTop=20;
-		//	floatingArray[0].targetBottom=undefined;
-		//	floatingArray[0].targetLeft=undefined;
-		//	floatingArray[0].targetRight=10;
-		//	floatingArray[0].centerX=undefined;
-		//	floatingArray[0].centerY=undefined;
-		// }
-		// move_upper_right();
-		// </script>
-
-		// echo '</div>';
 	}
 
 	// Admin Notices Boxer
 	// -------------------
-	if (function_exists('wqhelper_admin_notice_boxer')) {wqhelper_admin_notice_boxer();} else {echo "<h2> </h2>";}
+	if (function_exists('wqhelper_admin_notice_boxer')) {wqhelper_admin_notice_boxer();}
 
-	echo "<div id='wrapbox' class='postbox' style='width:680px;line-height:2em;'><div class='inner' style='padding-left:20px;'>";
+	// Plugin Admin Settings Header
+	// ----------------------------
+	csidebars_settings_header();
 
-	// Plugin Page Title
-	// -----------------
-	$viconurl = plugins_url("images/content-sidebars.png",__FILE__);
-	echo "<table><tr><td><img src='".$viconurl."'></td>";
-	echo "<td width='20'></td><td>";
-		echo "<table><tr><td><h2>".__('Content Sidebars','csidebars')."</h2></td>";
-		echo "<td width='20'></td>";
-		echo "<td><h3>v".$vcsidebarsversion."</h3></td></tr>";
-		echo "<tr><td colspan='3' align='center'>".__('by','csidebars');
-		echo " <a href='http://wordquest.org/' style='text-decoration:none;' target=_blank><b>WordQuest Alliance</b></a>";
-		echo "</td></tr></table>";
-	echo "</td><td width='50'></td>";
-	// 1.5.7: added welcome message
-	if ( (isset($_REQUEST['welcome'])) && ($_REQUEST['welcome'] == 'true') ) {
-		echo "<td><table style='background-color: lightYellow; border-style:solid; border-width:1px; border-color: #E6DB55; text-align:center;'>";
-		echo "<tr><td><div class='message' style='margin:0.25em;'><font style='font-weight:bold;'>";
-		echo __('Welcome! For usage see','csidebars')." <i>readme.txt</i> FAQ</font></div></td></tr></table></td>";
-	}
-	if ( (isset($_REQUEST['updated'])) && ($_REQUEST['updated'] == 'yes') ) {
-		echo "<td><table style='background-color: lightYellow; border-style:solid; border-width:1px; border-color: #E6DB55; text-align:center;'>";
-		echo "<tr><td><div class='message' style='margin:0.25em;'><font style='font-weight:bold;'>";
-		echo __('Settings Updated.','csidebars')."</font></div></td></tr></table></td>";
-	}
-	echo "</tr></table><br>";
+	// --- Plugin Page Scripts ---
+	// 1.6.5: added reset to defaults function
+	$reset_confirm = __('Are you sure you want to reset this plugin to default settings?','csidebars');
+	echo "<script>
+	function loaddefaultcss() {document.getElementById('dynamiccss').value = document.getElementById('defaultcss').value;}
+	function loadcssfile() {document.getElementById('dynamiccss').value = document.getElementById('cssfile').value;}
+	function loadsavedcss() {document.getElementById('dynamiccss').value = document.getElementById('savedcss').value;}
+	function resettodefaults() {
+		message = '".$reset_confirm."';
+		agree = confirm(message); if (!agree) {return false;}
+		document.getElementById('csidebars-update-action').value = 'reset';
+		document.getElementById('csidebars-update-form').submit();
+	}</script>";
 
-	$vfallbackoptions = array(
+	// --- plugin page style fixes ---
+	echo "<style>.small {font-size:9pt;} .wp-admin select.select {height:24px; line-height:22px; margin-top:-5px;</style>";
+
+	// --- set fallback options ---
+	$fallbackoptions = array(
 		'output' => __('Output','csidebars'), 'hidden' => __('Hide','bioship'),
 		'fallback' => __('Fallback','csidebars'), 'nooutput' => __('No Output','bioship')
 	);
 
-	// get post types
-	$vcpts[0] = 'post'; $vcpts[1] = 'page';
-	$vargs = array('public' => true, '_builtin' => false);
-	$vcptlist = get_post_types($vargs, 'names', 'and');
-	$vcpts = array_merge($vcpts, $vcptlist);
+	// --- get post types ---
+	$cpts = array('post', 'page');
+	$args = array('public' => true, '_builtin' => false);
+	$cptlist = get_post_types($args, 'names', 'and');
+	$cpts = array_merge($cpts, $cptlist);
 
 	// 1.4.5: add page context options
-	$vcontexts = array('frontpage' => __('Front Page','csidebars'), 'home' => __('Blog Page','csidebars'),
+	$contexts = array('frontpage' => __('Front Page','csidebars'), 'home' => __('Blog Page','csidebars'),
 		'404' => __('404 Pages','csidebars'), 'search' => __('Search Pages','csidebars') );
-	$varchives = array('archive' => __('ALL','csidebars'), 'tag' => __('Tag','csidebars'),
+	$archives = array('archive' => __('ALL','csidebars'), 'tag' => __('Tag','csidebars'),
 		'category' => __('Category','csidebars'), 'taxonomy' => __('Taxonomy','csidebars'),
 		'author' => __('Author','csidebars'), 'date' => __('Date','csidebars') );
 
-	echo "<h3>".__('Extra Sidebars','csidebars')."</h3>";
-	echo "<form action='admin.php?page=".$vcsidebarsslug."&updated=yes' method='post'>";
+	// Settings Update Form
+	// --------------------
 	// 1.5.0: add nonce field
+	echo "<h3>".__('Extra Sidebars','csidebars')."</h3>";
+	echo "<form method='post' id='csidebars-update-form'>";
 	wp_nonce_field('content_sidebars');
-	echo "<input type='hidden' name='fcs_update_options' value='yes'>";
+	echo "<input type='hidden' name='fcs_update_options' id='csidebars-update-action' value='yes'>";
 
+	// --- Above/Below Method ---
 	echo "<table><tr><td><b>".__('Positioning Mode','csidebars')."</b></td><td></td>";
 	echo "<td colspan='2'><input type='radio' name='fcs_abovebelow_method' value='hooks'";
-	if (csidebars_get_option('abovebelow_method') == 'hooks') {echo " checked";}
+		if (csidebars_get_setting('abovebelow_method',false) == 'hooks') {echo " checked";}
 	echo "> ".__('Use Template Action Hooks','csidebars')."</td>";
 	echo "<td colspan='4'><input type='radio' name='fcs_abovebelow_method' value='filter'";
-	if (csidebars_get_option('abovebelow_method') == 'filter') {echo " checked";}
+		if (csidebars_get_setting('abovebelow_method',false) == 'filter') {echo " checked";}
 	echo "> ".__('Use Content Filter','csidebars')."</td></tr>";
 	echo "<tr><td colspan='10'>".__('Note: Content Filter mode cannot account for the post title which is (usually) above','csidebars')." the_content!<br>";
 	echo __('So if you want a sidebar above the title you will need to use Template Hooks','csidebars')." (see readme.txt FAQ)</td></tr>";
 	echo "<tr height='20'><td> </td></tr>";
 
+	// --- Above Content Sidebar ---
 	echo "<tr><td><b>".__('Above Content Sidebar','csidebars')."</b></td><td width='10'></td>";
 	echo "<td class='small'>".__('Hook','csidebars').": </td>";
-	echo "<td><input type='text' class='small' name='fcs_abovecontent_hook' size='20' value='".csidebars_get_option('abovecontent_hook')."'></td>";
+	echo "<td><input type='text' class='small' name='fcs_abovecontent_hook' size='20' value='".csidebars_get_setting('abovecontent_hook',false)."'></td>";
 	echo "<td class='small'>".__('Priority','csidebars').": </td>";
-	echo "<td><input type='text' class='small' name='fcs_abovecontent_priority' size='2' style='width:35px;' value='".csidebars_get_option('abovecontent_priority')."'></td>";
+	echo "<td><input type='text' class='small' name='fcs_abovecontent_priority' size='2' style='width:35px;' value='".csidebars_get_setting('abovecontent_priority',false)."'></td>";
 	echo "<td class='small'>".__('Logged In','csidebars').": </td>";
 	echo "<td><select name='fcs_abovecontent_fallback' class='select'>";
-		$vfallback = csidebars_get_option('abovecontent_fallback');
-		foreach ($vfallbackoptions as $vkey => $vlabel) {
-			echo "<option value='".$vkey."'";
-			if ($vfallback == $vkey) {echo " selected='selected'";}
-			echo ">".$vlabel."</option>";
+		$fallback = csidebars_get_setting('abovecontent_fallback',false);
+		foreach ($fallbackoptions as $key => $label) {
+			echo "<option value='".$key."'";
+				if ($fallback == $key) {echo " selected='selected'";}
+			echo ">".$label."</option>";
 		}
 	echo "</select></td></tr>";
 
+	// --- disable above content sidebar ---
 	// 1.6.2: added missing translation wrapper
 	echo "<tr><td align='center' style='vertical-align:top;'>";
 	echo "<div style='text-align:right;'>".__('Output Sidebar for','csidebars').":</div>";
 	echo "<table style='margin-top:20px;'><tr><td><td class='small'>".__('Disable','csidebars').": </td>";
 	echo "<td><input type='checkbox' name='fcs_abovecontent_disable' value='yes'";
-	if (csidebars_get_option('abovecontent_disable') == 'yes') {echo " checked";}
+		if (csidebars_get_setting('abovecontent_disable',false) == 'yes') {echo " checked";}
 	echo "></td></tr></table></td><td width='10'></td>";
 
 	echo "<td align='left' colspan='6' class='small'>";
 
-		// post type selection for above content sidebars
-		$vgetcpts = csidebars_get_option('abovecontent_sidebar_cpts');
-		if (strstr($vgetcpts, ',')) {$vabovecpts = explode(',', $vgetcpts);}
-		else {$vabovecpts[0] = $vgetcpts;}
-		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 10px 0 0;'>";
+		// --- post type selection for above content sidebars ---
+		$getcpts = csidebars_get_setting('abovecontent_sidebar_cpts',false);
+		if (strstr($getcpts, ',')) {$abovecpts = explode(',', $getcpts);} else {$abovecpts[0] = $getcpts;}
+		echo "<ul style='margin:5px 0;'><li style='display:inline-block; margin:0 10px 0 0;'>";
 		echo __('Singular','csidebars').": </li>";
-		foreach ($vcpts as $vcpt) {
-			echo "<li style='display:inline-block; margin:0 10px;'>";
-			echo "<input type='checkbox' name='fcs_abovecontent_posttype_".$vcpt."' value='yes'";
-			if (in_array($vcpt,$vabovecpts)) {echo " checked>";} else {echo ">";}
+		foreach ($cpts as $cpt) {
 			// 1.6.2: use post type object label
-			$vposttypeobject = get_post_type_object($vcpt);
-			$vposttypedisplay = $vposttypeobject->labels->singular_name;
-			echo $vposttypedisplay."</li>";
+			$posttypeobject = get_post_type_object($cpt);
+			$posttypedisplay = $posttypeobject->labels->singular_name;
+			echo "<li style='display:inline-block; margin:0 10px;'>";
+			echo "<input type='checkbox' name='fcs_abovecontent_posttype_".$cpt."' value='yes'";
+				if (in_array($cpt, $abovecpts)) {echo " checked";}
+			echo ">".$posttypedisplay."</li>";
 		}
 		echo "</ul>";
 
-		// archive type selection for above content sidebar
-		$vgetarchives = csidebars_get_option('abovecontent_sidebar_archives');
-		if (strstr($vgetarchives, ',')) {$varchivecontexts = explode(',', $vgetarchives);}
-		else {$varchivecontexts[0] = $vgetarchives;}
-		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
+		// --- archive type selection for above content sidebar ---
+		$getarchives = csidebars_get_setting('abovecontent_sidebar_archives',false);
+		if (strstr($getarchives, ',')) {$archivecontexts = explode(',', $getarchives);} else {$archivecontexts[0] = $getarchives;}
+		echo "<ul style='margin:5px 0;'><li style='display:inline-block; margin:0 5px 0 0;'>";
 		echo __('Archives','csidebars').": </li>";
-		foreach ($varchives as $varchive => $vlabel) {
+		foreach ($archives as $archive => $label) {
 			echo "<li style='display:inline-block; margin:0 5px;'>";
-			echo "<input type='checkbox' name='fcs_abovecontent_archive_".$varchive."' value='yes'";
-			if (in_array($varchive, $varchivecontexts)) {echo " checked>";} else {echo ">";}
-			echo $vlabel."</li>";
+			echo "<input type='checkbox' name='fcs_abovecontent_archive_".$archive."' value='yes'";
+				if (in_array($archive, $archivecontexts)) {echo " checked";}
+			echo ">".$label."</li>";
 		}
 		echo "</ul>";
 
-		// context type selection for above content sidebar
-		$vgetcontexts = csidebars_get_option('abovecontent_sidebar_pages');
-		if (strstr($vgetcontexts, ',')) {$vpagecontexts = explode(',', $vgetcontexts);}
-		else {$vpagecontexts[0] = $vgetcontexts;}
-		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
+		// --- context type selection for above content sidebar ---
+		$getcontexts = csidebars_get_setting('abovecontent_sidebar_pages',false);
+		if (strstr($getcontexts, ',')) {$pagecontexts = explode(',', $getcontexts);}
+		else {$pagecontexts[0] = $getcontexts;}
+		echo "<ul style='margin:5px 0;'><li style='display:inline-block; margin:0 5px 0 0;'>";
 		echo __('Special','csidebars').": </li>";
-		foreach ($vcontexts as $vcontext => $vlabel) {
+		foreach ($contexts as $context => $label) {
 			echo "<li style='display:inline-block; margin:0 5px;'>";
-			echo "<input type='checkbox' name='fcs_abovecontent_pagetype_".$vcontext."' value='yes'";
-			if (in_array($vcontext, $vpagecontexts)) {echo " checked>";} else {echo ">";}
-			echo $vlabel."</li>";
+			echo "<input type='checkbox' name='fcs_abovecontent_pagetype_".$context."' value='yes'";
+				if (in_array($context, $pagecontexts)) {echo " checked";}
+			echo ">".$label."</li>";
 		}
 		echo "</ul><br>";
 
 	echo "</td></tr>";
 
+	// --- Below Content Sidebar ---
 	echo "<tr><td><b>".__('Below Content Sidebar','csidebars')."</b></td><td width='10'></td>";
 	echo "<td class='small'>".__('Hook','csidebars').": </td>";
-	echo "<td><input type='text' class='small' name='fcs_belowcontent_hook' size='20' value='".csidebars_get_option('belowcontent_hook')."'></td>";
+	echo "<td><input type='text' class='small' name='fcs_belowcontent_hook' size='20' value='".csidebars_get_setting('belowcontent_hook',false)."'></td>";
 	echo "<td class='small'>".__('Priority','csidebars').": </td>";
-	echo "<td><input type='text' class='small' name='fcs_belowcontent_priority' size='2' style='width:35px;' value='".csidebars_get_option('belowcontent_priority')."'></td>";
+	echo "<td><input type='text' class='small' name='fcs_belowcontent_priority' size='2' style='width:35px;' value='".csidebars_get_setting('belowcontent_priority',false)."'></td>";
 	echo "<td class='small'>".__('Logged In','csidebars').": </td>";
 	echo "<td><select name='fcs_belowcontent_fallback' class='select'>";
-		$vfallback = csidebars_get_option('belowcontent_fallback');
-		foreach ($vfallbackoptions as $vkey => $vlabel) {
-			echo "<option value='".$vkey."'";
-			if ($vfallback == $vkey) {echo " selected='selected'";}
-			echo ">".$vlabel."</option>";
+		$fallback = csidebars_get_setting('belowcontent_fallback',false);
+		foreach ($fallbackoptions as $key => $label) {
+			echo "<option value='".$key."'";
+				if ($fallback == $key) {echo " selected='selected'";}
+			echo ">".$label."</option>";
 		}
 	echo "</select></td></tr>";
 
+	// --- disable below content sidebar ---
 	// 1.6.2: added missing translation wrapper
 	echo "<tr><td align='center' style='vertical-align:top;'>";
 	echo "<div style='text-align:right;'>".__('Output Sidebar for','csidebars').":</div>";
 	echo "<table style='margin-top:20px;'><tr><td><td class='small'>".__('Disable','csidebars').": </td>";
 	echo "<td><input type='checkbox' name='fcs_belowcontent_disable' value='yes'";
-	if (csidebars_get_option('belowcontent_disable') == 'yes') {echo " checked";}
+		if (csidebars_get_setting('belowcontent_disable',false) == 'yes') {echo " checked";}
 	echo "></td></tr></table></td><td width='10'></td>";
 
 	echo "<td align='left' colspan='6' class='small'>";
 
-		// post type selection for below content sidebar
-		$vgetcpts = csidebars_get_option('belowcontent_sidebar_cpts');
-		if (strstr($vgetcpts, ',')) {$vbelowcpts = explode(',', $vgetcpts);}
-		else {$vbelowcpts[0] = $vgetcpts;}
-		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 10px 0 0;'>";
+		// --- post type selection for below content sidebar ---
+		$getcpts = csidebars_get_setting('belowcontent_sidebar_cpts',false);
+		if (strstr($getcpts, ',')) {$belowcpts = explode(',', $getcpts);} else {$belowcpts[0] = $getcpts;}
+		echo "<ul style='margin:5px 0;'><li style='display:inline-block; margin:0 10px 0 0;'>";
 		echo __('Singular','csidebars').": </li>";
-		foreach ($vcpts as $vcpt) {
-			echo "<li style='display:inline-block; margin:0 10px;'>";
-			echo "<input type='checkbox' name='fcs_belowcontent_posttype_".$vcpt."' value='yes'";
-			if (in_array($vcpt, $vbelowcpts)) {echo " checked>";} else {echo ">";}
+		foreach ($cpts as $cpt) {
 			// 1.6.2: use post type object label
-			$vposttypeobject = get_post_type_object($vcpt);
-			$vposttypedisplay = $vposttypeobject->labels->singular_name;
-			echo $vposttypedisplay."</li>";
+			$posttypeobject = get_post_type_object($cpt);
+			$posttypedisplay = $posttypeobject->labels->singular_name;
+			echo "<li style='display:inline-block; margin:0 10px;'>";
+			echo "<input type='checkbox' name='fcs_belowcontent_posttype_".$cpt."' value='yes'";
+				if (in_array($cpt, $belowcpts)) {echo " checked";}
+			echo ">".$posttypedisplay."</li>";
 		}
 		echo "</ul>";
 
-		// archive type selection for below content sidebar
-		$vgetarchives = csidebars_get_option('belowcontent_sidebar_archives');
-		if (strstr($vgetarchives, ',')) {$varchivecontexts = explode(',', $vgetarchives);}
-		else {$varchivecontexts[0] = $vgetarchives;}
-		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
+		// --- archive type selection for below content sidebar ---
+		$getarchives = csidebars_get_setting('belowcontent_sidebar_archives',false);
+		if (strstr($getarchives, ',')) {$archivecontexts = explode(',', $getarchives);} else {$archivecontexts[0] = $getarchives;}
+		echo "<ul style='margin:5px 0;'><li style='display:inline-block; margin:0 5px 0 0;'>";
 		echo __('Archives','csidebars').": </li>";
-		foreach ($varchives as $varchive => $vlabel) {
+		foreach ($archives as $archive => $label) {
 			echo "<li style='display:inline-block; margin:0 5px;'>";
-			echo "<input type='checkbox' name='fcs_belowcontent_archive_".$varchive."' value='yes'";
-			if (in_array($varchive, $varchivecontexts)) {echo " checked>";} else {echo ">";}
-			echo $vlabel."</li>";
+			echo "<input type='checkbox' name='fcs_belowcontent_archive_".$archive."' value='yes'";
+				if (in_array($archive, $archivecontexts)) {echo " checked";}
+			echo ">".$label."</li>";
 		}
 		echo "</ul>";
 
-		// context type selection for below content sidebar
-		$vgetcontexts = csidebars_get_option('belowcontent_sidebar_pages');
-		if (strstr($vgetcontexts, ',')) {$vpagecontexts = explode(',', $vgetcontexts);}
-		else {$vpagecontexts[0] = $vgetcontexts;}
-		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
+		// --- context type selection for below content sidebar ---
+		$getcontexts = csidebars_get_setting('belowcontent_sidebar_pages',false);
+		if (strstr($getcontexts, ',')) {$pagecontexts = explode(',', $getcontexts);} else {$pagecontexts[0] = $getcontexts;}
+		echo "<ul style='margin:5px 0;'><li style='display:inline-block; margin:0 5px 0 0;'>";
 		echo __('Special','csidebars').": </li>";
-		foreach ($vcontexts as $vcontext => $vlabel) {
+		foreach ($contexts as $context => $label) {
 			echo "<li style='display:inline-block; margin:0 5px;'>";
-			echo "<input type='checkbox' name='fcs_belowcontent_pagetype_".$vcontext."' value='yes'";
-			if (in_array($vcontext, $vpagecontexts)) {echo " checked>";} else {echo ">";}
-			echo $vlabel."</li>";
+			echo "<input type='checkbox' name='fcs_belowcontent_pagetype_".$context."' value='yes'";
+				if (in_array($context, $pagecontexts)) {echo " checked";}
+			echo ">".$label."</li>";
 		}
 		echo "</ul><br>";
 
 	echo "</td></tr>";
 
-	// 1.4.5: removed unneeded output and hide options from login sidebar
-	$vfallbackoptions = array('fallback' => __('Fallback','csidebars'), 'nooutput' => __('No Output','bioship'));
-
+	// --- Login Sidebar ---
+	// 1.4.5: removed unneeded output and hide options for login sidebar
+	$fallbackoptions = array('fallback' => __('Fallback','csidebars'), 'nooutput' => __('No Output','bioship'));
 	echo "<tr><td><b>".__('Login Sidebar','csidebars')."</b></td><td width='10'></td>";
 	echo "<td class='small'>".__('Hook','csidebars').": </td>";
-	echo "<td><input type='text' class='small' name='fcs_loginsidebar_hook' size='20' value='".csidebars_get_option('loginsidebar_hook')."'></td>";
+	echo "<td><input type='text' class='small' name='fcs_loginsidebar_hook' size='20' value='".csidebars_get_setting('loginsidebar_hook',false)."'></td>";
 	echo "<td class='small'>".__('Priority','csidebars').": </td>";
-	echo "<td><input type='text' class='small' name='fcs_loginsidebar_priority' size='2' style='width:35px;' value='".csidebars_get_option('loginsidebar_priority')."'></td>";
+	echo "<td><input type='text' class='small' name='fcs_loginsidebar_priority' size='2' style='width:35px;' value='".csidebars_get_setting('loginsidebar_priority',false)."'></td>";
 	echo "<td class='small'>".__('Logged In','csidebars').": </td>";
 	echo "<td><select name='fcs_loginsidebar_fallback' class='select'>";
-		$vfallback = csidebars_get_option('loginsidebar_fallback');
-		foreach ($vfallbackoptions as $vkey => $vlabel) {
-			echo "<option value='".$vkey."'";
-			if ($vfallback == $vkey) {echo " selected='selected'";}
-			echo ">".$vlabel."</option>";
+		$fallback = csidebars_get_setting('loginsidebar_fallback',false);
+		foreach ($fallbackoptions as $key => $label) {
+			echo "<option value='".$key."'";
+				if ($fallback == $key) {echo " selected='selected'";}
+			echo ">".$label."</option>";
 		}
 	echo "</select></td></tr>";
 
+	// --- disable login sidebar ---
 	// 1.6.2: added missing translation wrapper
 	echo "<tr><td align='center' style='vertical-align:top;'>";
 	echo "<div style='text-align:right;'>".__('Output Sidebar for','csidebars').":</div>";
 	echo "<table style='margin-top:20px;'><tr><td><td class='small'>".__('Disable','csidebars').": </td>";
 	echo "<td><input type='checkbox' name='fcs_loginsidebar_disable' value='yes'";
-	if (csidebars_get_option('loginsidebar_disable') == 'yes') {echo " checked";}
+		if (csidebars_get_setting('loginsidebar_disable',false) == 'yes') {echo " checked";}
 	echo "></td></tr></table></td><td width='10'></td>";
 
 	echo "<td align='left' colspan='6' class='small'>";
 
-		// post type selection for login sidebar
-		$vgetcpts = csidebars_get_option('login_sidebar_cpts');
-		if (strstr($vgetcpts, ',')) {$vlogincpts = explode(',', $vgetcpts);}
-		else {$vlogincpts[0] = $vgetcpts;}
-		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 10px 0 0;'>";
+		// --- post type selection for login sidebar ---
+		$getcpts = csidebars_get_setting('login_sidebar_cpts',false);
+		if (strstr($getcpts, ',')) {$logincpts = explode(',', $getcpts);}
+		else {$logincpts[0] = $getcpts;}
+		echo "<ul style='margin:5px 0;'><li style='display:inline-block; margin:0 10px 0 0;'>";
 		echo __('Singular','csidebars').": </li>";
-		foreach ($vcpts as $vcpt) {
-			echo "<li style='display:inline-block; margin:0 10px;'>";
-			echo "<input type='checkbox' name='fcs_login_posttype_".$vcpt."' value='yes'";
-			if (in_array($vcpt,$vlogincpts)) {echo " checked>";} else {echo ">";}
+		foreach ($cpts as $cpt) {
 			// 1.6.2: use post type object label
-			$vposttypeobject = get_post_type_object($vcpt);
-			$vposttypedisplay = $vposttypeobject->labels->singular_name;
-			echo $vposttypedisplay."</li>";
+			$posttypeobject = get_post_type_object($cpt);
+			$posttypedisplay = $posttypeobject->labels->singular_name;
+			echo "<li style='display:inline-block; margin:0 10px;'>";
+			echo "<input type='checkbox' name='fcs_login_posttype_".$cpt."' value='yes'";
+				if (in_array($cpt, $logincpts)) {echo " checked";}
+			echo ">".$posttypedisplay."</li>";
 		}
 		echo "</ul>";
 
-		// archive type selection for login sidebar
-		$vgetarchives = csidebars_get_option('login_sidebar_archives');
-		if (strstr($vgetarchives, ',')) {$varchivecontexts = explode(',', $vgetarchives);}
-		else {$varchivecontexts[0] = $vgetarchives;}
-		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
+		// --- archive type selection for login sidebar ---
+		$getarchives = csidebars_get_setting('login_sidebar_archives',false);
+		if (strstr($getarchives, ',')) {$archivecontexts = explode(',', $getarchives);} else {$archivecontexts[0] = $getarchives;}
+		echo "<ul style='margin:5px 0;'><li style='display:inline-block; margin:0 5px 0 0;'>";
 		echo __('Archives','csidebars').": </li>";
-		foreach ($varchives as $varchive => $vlabel) {
+		foreach ($archives as $archive => $label) {
 			echo "<li style='display:inline-block; margin:0 5px;'>";
-			echo "<input type='checkbox' name='fcs_login_archive_".$varchive."' value='yes'";
-			if (in_array($varchive, $varchivecontexts)) {echo " checked>";} else {echo ">";}
-			echo $vlabel."</li>";
+			echo "<input type='checkbox' name='fcs_login_archive_".$archive."' value='yes'";
+				if (in_array($archive, $archivecontexts)) {echo " checked";}
+			echo ">".$label."</li>";
 		}
 		echo "</ul>";
 
-		// context type selection for login sidebar
-		$vgetcontexts = csidebars_get_option('login_sidebar_pages');
-		if (strstr($vgetcontexts, ',')) {$vpagecontexts = explode(',', $vgetcontexts);}
-		else {$vpagecontexts[0] = $vgetcontexts;}
-		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
+		// --- context type selection for login sidebar ---
+		$getcontexts = csidebars_get_setting('login_sidebar_pages',false);
+		if (strstr($getcontexts, ',')) {$pagecontexts = explode(',', $getcontexts);} else {$pagecontexts[0] = $getcontexts;}
+		echo "<ul style='margin:5px 0;'><li style='display:inline-block; margin:0 5px 0 0;'>";
 		echo __('Special','csidebars').": </li>";
-		foreach ($vcontexts as $vcontext => $vlabel) {
+		foreach ($contexts as $context => $label) {
 			echo "<li style='display:inline-block; margin:0 5px;'>";
-			echo "<input type='checkbox' name='fcs_login_pagetype_".$vcontext."' value='yes'";
-			if (in_array($vcontext, $vpagecontexts)) {echo " checked>";} else {echo ">";}
-			echo $vlabel."</li>";
+			echo "<input type='checkbox' name='fcs_login_pagetype_".$context."' value='yes'";
+				if (in_array($context, $pagecontexts)) {echo " checked";}
+			echo ">".$label."</li>";
 		}
 		echo "</ul><br>";
 
 	echo "</td></tr>";
 
+	// --- Member/Logged In Sidebar ---
 	echo "<tr><td><b>".__('Logged In Sidebar','csidebars')."</b></td><td width='10'></td>";
 	echo "<td class='small'>".__('Hook','csidebars').": </td>";
-	echo "<td><input type='text' class='small' name='fcs_membersidebar_hook' size='20' value='".csidebars_get_option('membersidebar_hook')."'></td>";
+	echo "<td><input type='text' class='small' name='fcs_membersidebar_hook' size='20' value='".csidebars_get_setting('membersidebar_hook',false)."'></td>";
 	echo "<td class='small'>".__('Priority','csidebars').": </td>";
-	echo "<td><input type='text' class='small' name='fcs_membersidebar_priority' size='2' style='width:35px;' value='".csidebars_get_option('membersidebar_priority')."'></td>";
+	echo "<td><input type='text' class='small' name='fcs_membersidebar_priority' size='2' style='width:35px;' value='".csidebars_get_setting('membersidebar_priority',false)."'></td>";
 	echo "<td>".__('Mode','csidebars').": </td>";
 	// 1.4.5: added member sidebar mode selection
 	echo "<td><select name='fcs_membersidebar_mode' class='select'>";
-	$vfallback = csidebars_get_option('membersidebar_mode');
-	$vfallbackoptions = array(
+	$fallback = csidebars_get_setting('membersidebar_mode',false);
+	$fallbackoptions = array(
 		'fallback' => __('Fallback','csidebars'), 'standalone' => __('Standalone','csidebars'), 'both' => __('Both','csidebars')
 	);
-	foreach ($vfallbackoptions as $vkey => $vlabel) {
-		echo "<option value='".$vkey."'";
-		if ($vfallback == $vkey) {echo " selected='selected'";}
-		echo ">".$vlabel."</option>";
+	foreach ($fallbackoptions as $key => $label) {
+		echo "<option value='".$key."'";
+			if ($fallback == $key) {echo " selected='selected'";}
+		echo ">".$label."</option>";
 	}
 	echo "</select></td></tr>";
 
+	// --- disable logged in sidebar ---
 	// 1.6.2: added missing translation wrapper
 	echo "<tr><td align='center' style='vertical-align:top;'>";
 	echo "<div style='text-align:right;'>".__('Output Sidebar for','csidebars').":</div>";
 	echo "<table style='margin-top:20px;'><tr><td><td class='small'>".__('Disable','csidebars').": </td>";
 	echo "<td><input type='checkbox' name='fcs_membersidebar_disable' value='yes'";
-	if (csidebars_get_option('membersidebar_disable') == 'yes') {echo " checked";}
+	if (csidebars_get_setting('membersidebar_disable',false) == 'yes') {echo " checked";}
 	echo "></td></tr></table></td><td width='10'></td>";
 
 	echo "<td align='left' colspan='6' class='small'>";
 
-		// post type selection for member sidebar
-		$vgetcpts = csidebars_get_option('member_sidebar_cpts');
-		if (strstr($vgetcpts, ',')) {$vmembercpts = explode(',', $vgetcpts);}
-		else {$vmembercpts[0] = $vgetcpts;}
-		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 10px 0 0;'>";
+		// --- post type selection for member sidebar ---
+		$getcpts = csidebars_get_setting('member_sidebar_cpts',false);
+		if (strstr($getcpts, ',')) {$membercpts = explode(',', $getcpts);} else {$membercpts[0] = $getcpts;}
+		echo "<ul style='margin:5px 0;'><li style='display:inline-block; margin:0 10px 0 0;'>";
 		echo __('Singular','csidebars').": </li>";
-		foreach ($vcpts as $vcpt) {
-			echo "<li style='display:inline-block; margin:0 10px;'>";
-			echo "<input type='checkbox' name='fcs_member_posttype_".$vcpt."' value='yes'";
-			if (in_array($vcpt, $vmembercpts)) {echo " checked>";} else {echo ">";}
+		foreach ($cpts as $cpt) {
 			// 1.6.2: use post type object label
-			$vposttypeobject = get_post_type_object($vcpt);
-			$vposttypedisplay = $vposttypeobject->labels->singular_name;
-			echo $vposttypedisplay."</li>";
+			$posttypeobject = get_post_type_object($cpt);
+			$posttypedisplay = $posttypeobject->labels->singular_name;
+			echo "<li style='display:inline-block; margin:0 10px;'>";
+			echo "<input type='checkbox' name='fcs_member_posttype_".$cpt."' value='yes'";
+				if (in_array($cpt, $membercpts)) {echo " checked";}
+			echo $posttypedisplay."</li>";
 		}
 		echo "</ul>";
 
-		// archive type selection for member sidebar
-		$vgetarchives = csidebars_get_option('member_sidebar_archives');
-		if (strstr($vgetarchives, ',')) {$varchivecontexts = explode(',', $vgetarchives);}
-		else {$varchivecontexts[0] = $vgetarchives;}
-		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
+		// --- archive type selection for member sidebar ---
+		$getarchives = csidebars_get_setting('member_sidebar_archives',false);
+		if (strstr($getarchives, ',')) {$archivecontexts = explode(',', $getarchives);} else {$archivecontexts[0] = $getarchives;}
+		echo "<ul style='margin:5px 0;'><li style='display:inline-block; margin:0 5px 0 0;'>";
 		echo __('Archives','csidebars').": </li>";
-		foreach ($varchives as $varchive => $vlabel) {
+		foreach ($archives as $archive => $label) {
 			echo "<li style='display:inline-block; margin:0 5px;'>";
-			echo "<input type='checkbox' name='fcs_member_archive_".$varchive."' value='yes'";
-			if (in_array($varchive, $varchivecontexts)) {echo " checked>";} else {echo ">";}
-			echo $vlabel."</li>";
+			echo "<input type='checkbox' name='fcs_member_archive_".$archive."' value='yes'";
+				if (in_array($archive, $archivecontexts)) {echo " checked";}
+			echo ">".$label."</li>";
 		}
 		echo "</ul>";
 
-		// context type selection for member sidebar
-		$vgetcontexts = csidebars_get_option('member_sidebar_pages');
-		if (strstr($vgetcontexts, ',')) {$vpagecontexts = explode(',', $vgetcontexts);}
-		else {$vpagecontexts[0] = $vgetcontexts;}
-		echo "<ul style='margin:0px;'><li style='display:inline-block; margin:0 5px 0 0;'>";
+		// --- context type selection for member sidebar ---
+		$getcontexts = csidebars_get_setting('member_sidebar_pages',false);
+		if (strstr($getcontexts, ',')) {$pagecontexts = explode(',', $getcontexts);} else {$pagecontexts[0] = $getcontexts;}
+		echo "<ul style='margin:5px 0;'><li style='display:inline-block; margin:0 5px 0 0;'>";
 		echo __('Special','csidebars').": </li>";
-		foreach ($vcontexts as $vcontext => $vlabel) {
+		foreach ($contexts as $context => $label) {
 			echo "<li style='display:inline-block; margin:0 5px;'>";
-			echo "<input type='checkbox' name='fcs_member_pagetype_".$vcontext."' value='yes'";
-			if (in_array($vcontext, $vpagecontexts)) {echo " checked>";} else {echo ">";}
-			echo $vlabel."</li>";
+			echo "<input type='checkbox' name='fcs_member_pagetype_".$context."' value='yes'";
+				if (in_array($context, $pagecontexts)) {echo " checked";}
+			echo ">".$label."</li>";
 		}
 		echo "</ul>";
 
@@ -1138,188 +873,204 @@ function csidebars_options_page() {
 	echo "</table>";
 	echo "(".__('Sidebar with Fallbacks show Logged In Sidebar instead for Logged In Users, eg. Members Area Links.','csidebars').")<br><br>";
 
+	// --- Shortcode Options ---
 	// 1.3.5: add options for widget text/title shortcodes
 	// 1.4.5: added option for shortcodes in excerpts
 	echo "<h3>".__('Shortcode Processing','csidebars')."</h3>";
 	echo "<table><tr><td><b>".__('Process Shortcodes in Widget Text','csidebars')."</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_widget_text_shortcodes' value='yes'";
-	if (csidebars_get_option('widget_text_shortcodes') == 'yes') {echo " checked";}
+		if (csidebars_get_setting('widget_text_shortcodes',false) == 'yes') {echo " checked";}
 	echo "></td><td width='30'></td>";
 	echo "<td><b>".__('Process Shortcodes in Excerpts','csidebars')."</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_excerpt_shortcodes' value='yes'";
-	if (csidebars_get_option('excerpt_shortcodes') == 'yes') {echo " checked";}
+		if (csidebars_get_setting('excerpt_shortcodes',false) == 'yes') {echo " checked";}
 	echo "></td></tr>";
 	echo "<tr><td><b>".__('Process Shortcodes in Widget Titles','csidebars')."</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_widget_title_shortcodes' value='yes'";
-	if (csidebars_get_option('widget_title_shortcodes') == 'yes') {echo " checked";}
+		if (csidebars_get_setting('widget_title_shortcodes',false) == 'yes') {echo " checked";}
 	echo "></td><td width='30'></td>";
 	echo "<td><b>".__('Shortcode Sidebars in Excerpts','csidebars')."</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_sidebars_in_excerpts' value='yes'";
-	if (csidebars_get_option('sidebars_in_excerpts') == 'yes') {echo " checked";}
+		if (csidebars_get_setting('sidebars_in_excerpts',false) == 'yes') {echo " checked";}
 	echo "></td></tr></table><br>";
 
+	// --- Shortcode Sidebars ---
 	echo "<h3>".__('Shortcode Sidebars','csidebars')."</h3>";
 
 	echo "<table><tr><td><b>".__('Sidebar','csidebars')." 1</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_shortcode1_disable' value='yes'";
-	if (csidebars_get_option('shortcode1_disable') == 'yes') {echo " checked";}
+		if (csidebars_get_setting('shortcode1_disable',false) == 'yes') {echo " checked";}
 	echo "></td><td width='10'>".__('Disable','csidebars')."</td><td width='40'></td>";
 
 	echo "<td><b>".__('Sidebar','csidebars')." 2</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_shortcode2_disable' value='yes'";
-	if (csidebars_get_option('shortcode2_disable') == 'yes') {echo " checked";}
+		if (csidebars_get_setting('shortcode2_disable',false) == 'yes') {echo " checked";}
 	echo "></td><td width='10'>".__('Disable','csidebars')."</td><td width='40'></td>";
 
 	echo "<td><b>".__('Sidebar','csidebars')." 3</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_shortcode3_disable' value='yes'";
-	if (csidebars_get_option('shortcode3_disable') == 'yes') {echo " checked";}
+		if (csidebars_get_setting('shortcode3_disable',false) == 'yes') {echo " checked";}
 	echo "></td><td width='10'>".__('Disable','csidebars')."</td></tr>";
 
 	echo "<tr><td colspan='4'>[shortcode-sidebar-1]</td><td></td>";
 	echo "<td colspan='4'>[shortcode-sidebar-2]</td><td></td>";
 	echo "<td colspan='4'>[shortcode-sidebar-3]</td></tr></table><br>";
 
+	// --- InPost Sidebars ---
 	echo "<h3>".__('InPost Sidebars','csidebars')."</h3>";
 
 	echo "<table><tr><td><b>".__('Sidebar','csidebars')." 1</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_inpost1_disable' value='yes'";
-	if (csidebars_get_option('inpost1_disable') == 'yes') {echo " checked";}
+		if (csidebars_get_setting('inpost1_disable',false) == 'yes') {echo " checked";}
 	echo "></td><td width='10'>".__('Disable','csidebars')."</td><td width='40'></td>";
 
 	echo "<td><b>".__('Sidebar','csidebars')." 2</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_inpost2_disable' value='yes'";
-	if (csidebars_get_option('inpost2_disable') == 'yes') {echo " checked";}
+		if (csidebars_get_setting('inpost2_disable',false) == 'yes') {echo " checked";}
 	echo "></td><td width='10'>".__('Disable','csidebars')."</td><td width='40'></td>";
 
 	echo "<td><b>".__('Sidebar','csidebars')." 3</b></td><td width='10'></td>";
 	echo "<td><input type='checkbox' name='fcs_inpost3_disable' value='yes'";
-	if (csidebars_get_option('inpost3_disable') == 'yes') {echo " checked";}
+		if (csidebars_get_setting('inpost3_disable',false) == 'yes') {echo " checked";}
 	echo "></td><td width='10'>".__('Disable','csidebars')."</td></tr>";
 	echo "</table>";
 
-	$vcptoptions = csidebars_get_option('inpost_sidebars_cpts');
-	if (strstr($vcptoptions,',')) {$vinpostcpts = explode(',',$vcptoptions);}
-	else {$vinpostcpts[0] = $vcptoptions;}
+	// --- get inpost CPT settings ---
+	$cptsettings = csidebars_get_setting('inpost_sidebars_cpts',false);
+	if (strstr($cptsettings, ',')) {$inpostcpts = explode(',', $cptsettings);}
+	else {$inpostcpts[0] = $cptsettings;}
 
-	echo "<table>";
-	echo "<tr><td>".__('Activate for Post Types','csidebars').":</td>";
+	// --- post types for inpost sidebars ---
+	echo "<table><tr><td>".__('Activate for Post Types','csidebars').":</td>";
 	echo "<td width='10'></td>";
 	echo "<td colspan='5'>";
-	if (count($vcpts) > 0) {
+	if (count($cpts) > 0) {
 		echo "<ul>";
-		foreach ($vcpts as $vcpt) {
-			echo "<li style='display:inline-block; margin:0 10px;'><input type='checkbox' name='fcs_inpost_posttype_".$vcpt."' value='yes'";
-			if (in_array($vcpt, $vinpostcpts)) {echo " checked>";} else {echo ">";}
+		foreach ($cpts as $cpt) {
 			// 1.6.2: use post type object label
-			$vposttypeobject = get_post_type_object($vcpt);
-			$vposttypedisplay = $vposttypeobject->labels->singular_name;
-			echo $vposttypedisplay."</li>";
+			$posttypeobject = get_post_type_object($cpt);
+			$posttypedisplay = $posttypeobject->labels->singular_name;
+			echo "<li style='display:inline-block; margin:0 10px;'><input type='checkbox' name='fcs_inpost_posttype_".$cpt."' value='yes'";
+				if (in_array($cpt, $inpostcpts)) {echo " checked>";}
+			echo ">".$posttypedisplay."</li>";
 		}
 		echo "</ul>";
 	}
-	echo "</td>";
+	echo "</td></tr>";
+
+	// --- paragraph marker and priority ---
 	echo "<tr><td>".__('Paragraph Split Marker','csidebars').":</td>";
 	echo "<td width='10'></td>";
-	echo "<td><input type='text' size='15' style='width:110px;' name='fcs_inpost_marker' value='".csidebars_get_option('inpost_marker')."'></td>";
+	echo "<td><input type='text' size='15' style='width:110px;' name='fcs_inpost_marker' value='".csidebars_get_setting('inpost_marker',false)."'></td>";
 	echo "<td width='40'></td>";
 	echo "<td>the_content ".__('Filter Priority','csidebars').":</td><td width='10'></td>";
-	echo "<td><input type='text' size='3' style='width:40px;' name='fcs_inpost_priority' value='".csidebars_get_option('inpost_priority')."'></td>";
+	echo "<td><input type='text' size='3' style='width:40px;' name='fcs_inpost_priority' value='".csidebars_get_setting('inpost_priority',false)."'></td>";
 	echo "</tr><tr><td colspan='3' align='center'>(".__('Used to count and split paragraphs.','csidebars').")</td>";
 	echo "<td></td><td colspan='3' align='center'>(".__('Filter positioning method only.','csidebars').")</td>";
 	echo "</tr></table>";
 
+	// --- paragraph count settings ---
 	echo "<table><tr><td style='vertical-align:top;'>";
 		echo "<table>";
 		echo "<tr height='30'><td>".__('Insert Sidebar','csidebars')." 1 ".__('After Paragraph','csidebars')." #</td><td width='30'></td>";
-		echo "<td><input type='text' size='2' style='width:30px;' name='fcs_inpost_positiona' value='".csidebars_get_option('inpost_positiona')."'></td></tr>";
+		echo "<td><input type='text' size='2' style='width:30px;' name='fcs_inpost_positiona' value='".csidebars_get_setting('inpost_positiona',false)."'></td></tr>";
 		echo "<tr height='5'><td> </td></tr>";
 		echo "<tr height='30'><td>".__('Insert Sidebar','csidebars')." 2 ".__('After Paragraph','csidebars')." #</td><td width='30'></td>";
-		echo "<td><input type='text' size='2' style='width:30px;' name='fcs_inpost_positionb' value='".csidebars_get_option('inpost_positionb')."'></td></tr>";
+		echo "<td><input type='text' size='2' style='width:30px;' name='fcs_inpost_positionb' value='".csidebars_get_setting('inpost_positionb',false)."'></td></tr>";
 		echo "<tr height='5'><td> </td></tr>";
 		echo "<tr height='30'><td>".__('Insert Sidebar','csidebars')." 3 ".__('After Paragraph','csidebars')." #</td><td width='30'></td>";
-		echo "<td><input type='text' size='2' style='width:30px;' name='fcs_inpost_positionc' value='".csidebars_get_option('inpost_positionc')."'></td>";
+		echo "<td><input type='text' size='2' style='width:30px;' name='fcs_inpost_positionc' value='".csidebars_get_setting('inpost_positionc',false)."'></td>";
 		echo "</tr></table>";
 	echo "</td><td width='20'></td><td style='vertical-align:top;'>";
 
-	$vfloatoptions = array('' => __('Do Not Set','csidebars'), 'none' => __('None','csidebars'),
+	$floatoptions = array('' => __('Do Not Set','csidebars'), 'none' => __('None','csidebars'),
 						'left' => __('Left','csidebars'), 'right' => __('Right','csidebars'));
 
 	echo "<table><tr height='30'><td>".__('Float Sidebar','csidebars')." 1: </td><td width='10'></td>";
 	echo "<td><select name='fcs_inpost1_float'>";
-		foreach ($vfloatoptions as $vkey => $vlabel) {
-		 	echo "<option value='".$vkey."'";
-			if (csidebars_get_option('inpost1_float') == $vkey) {echo " selected='selected'";}
-			echo ">".$vlabel."</option>";
+		$float = csidebars_get_setting('inpost1_float',false);
+		foreach ($floatoptions as $key => $label) {
+		 	echo "<option value='".$key."'";
+				if ($float == $key) {echo " selected='selected'";}
+			echo ">".$label."</option>";
 		}
 	echo "</select></td></tr><tr height='5'><td> </td></tr>";
 	echo "<tr height='30'><td>".__('Float Sidebar','csidebars')." 2: </td><td width='10'></td>";
 	echo "<td><select name='fcs_inpost2_float'>";
-		foreach ($vfloatoptions as $vkey => $vlabel) {
-			echo "<option value='".$vkey."'";
-			if (csidebars_get_option('inpost2_float') == $vkey) {echo " selected='selected'";}
-			echo ">".$vlabel."</option>";
+		$float = csidebars_get_setting('inpost2_float',false);
+		foreach ($floatoptions as $key => $label) {
+			echo "<option value='".$key."'";
+				if ($float == $key) {echo " selected='selected'";}
+			echo ">".$label."</option>";
 		}
 	echo "</select></td></tr><tr height='5'><td> </td></tr>";
 	echo "<tr height='30'><td>".__('Float Sidebar','csidebars')." 3: </td><td width='10'></td>";
 	echo "<td><select name='fcs_inpost3_float'>";
-		foreach ($vfloatoptions as $vkey => $vlabel) {
-			echo "<option value='".$vkey."'";
-			if (csidebars_get_option('inpost3_float') == $vkey) {echo " selected='selected'";}
-			echo ">".$vlabel."</option>";
+		$float = csidebars_get_setting('inpost3_float',false);
+		foreach ($floatoptions as $key => $label) {
+			echo "<option value='".$key."'";
+				if ($float == $key) {echo " selected='selected'";}
+			echo ">".$label."</option>";
 		}
 	echo "</select></td></tr></table>";
 
 	echo "</td></tr><tr height='20'><td></td></tr>";
 
-	echo "<tr><td><h3>".__('CSS Styles','csidebars')."</h3></td></tr>";
-	$vdefaultcss = file_get_contents(dirname(__FILE__).'/content-default.css');
-	$vcssfile = file_get_contents(dirname(__FILE__).'/content-sidebars.css');
-	$vsavedcss = csidebars_get_option('dynamic_css');
+	// --- CSS Styles ---
 	// 1.5.0: added direct URL loading as new default
 	// 1.5.6: added file write method (to content-sidebars.css)
-	$vcssmode = csidebars_get_option('css_mode');
-	// 1.5.8: remove direct dnamic PHP to CSS method
-	if ( ($vcssmode == 'dynamic') || ($vcssmode == 'direct') ) {$vcssmode = 'write';}
+	echo "<tr><td><h3>".__('CSS Styles','csidebars')."</h3></td></tr>";
+	$defaultcss = file_get_contents(dirname(__FILE__).'/content-default.css');
+	$cssfile = file_get_contents(dirname(__FILE__).'/content-sidebars.css');
+	$savedcss = csidebars_get_setting('dynamic_css',false);
+	$cssmode = csidebars_get_setting('css_mode',false);
+
+	// 1.5.8: remove direct dynamic PHP to CSS method
+	if ( ($cssmode == 'dynamic') || ($cssmode == 'direct') ) {$cssmode = 'write';}
 	echo "<tr><td style='vertical-align:top;'><b>".__('CSS Mode','csidebars')."</b></td></tr>";
 	echo "<tr><td colspan='3'><table>";
 		echo "<td align='center'><input type='radio' name='fcs_css_mode' value='default'";
-		if ($vcssmode == 'default') {echo " checked";}
+		if ($cssmode == 'default') {echo " checked";}
 		echo "> ".__('Default','csidebars')."<br>content-default.css</td><td width='20'></td>";
 		echo "<td align='center'><input type='radio' name='fcs_css_mode' value='adminajax'";
-		if ($vcssmode == 'adminajax') {echo " checked";}
+		if ($cssmode == 'adminajax') {echo " checked";}
 		echo "> ".__('AJAX','csidebars')." <br>".__('via','csidebars')." admin-ajax.php</td><td width='20'></td>";
 		// 1.5.8: remove direct dynamic PHP to CSS method
 		// echo "<td align='center'><input type='radio' name='fcs_css_mode' value='direct'";
-		// if ($vcssmode == 'direct') {echo " checked";}
+		// if ($cssmode == 'direct') {echo " checked";}
 		// echo "> ".__('Direct','csidebars')." <br>content-sidebars-css.php<td width='20'></td>";
 		echo "<td align='center'><input type='radio' name='fcs_css_mode' value='write'";
-		if ($vcssmode == 'write') {echo " checked";}
+		if ($cssmode == 'write') {echo " checked";}
 		echo "> ".__('Write','csidebars')." <br>".__('to','csidebars')." content-sidebars.css</tr></table><br>";
 	echo "</td></tr>";
 
+	// --- Dynamic CSS Area ---
 	echo "<tr><td colspan='3'><b>".__('Dynamic CSS','csidebars')."</b>:<br>";
-	echo "<textarea rows='7' cols='70' style='width:100%;' id='dynamiccss' name='fcs_dynamic_css'>".esc_textarea($vsavedcss)."</textarea>";
+	echo "<textarea rows='7' cols='70' style='width:100%;' id='dynamiccss' name='fcs_dynamic_css'>".esc_textarea($savedcss)."</textarea>";
 	echo "</td></tr>";
 
+	// --- Load Default / File / Saved CSS ---
 	echo "<tr><td colspan='3'><table style='width:100%;'>";
 		echo "<tr><td align='left' style='width:33%;'><input type='button' class='button-secondary' style='font-size:9pt;' onclick='loaddefaultcss();' value='".__('Load Default CSS','csidebars')."'></td>";
 		echo "<td align='center' style='width:33%;'><input type='button' class='button-secondary' style='font-size:9pt;' onclick='loadcssfile();' value='".__('Load CSS File','csidebars')."'></td>";
 		echo "<td align='right' style='width:33%;'><input type='button' class='button-secondary' style='font-size:9pt;' onclick='loadsavedcss();' value='".__('Reload Saved CSS','csidebars')."'></td></tr>";
 	echo "</table></td></tr>";
 
-	// TODO: reset to default settings button?
-
+	// --- reset and save settings buttons ---
+	// 1.6.5: add reset to default settings button
 	echo "<tr height='15'><td> </td></tr>";
-	echo "<tr><td colspan='3' align='center'>";
+	echo "<tr><td align='center'>";
+	echo "<input type='button' class='button-secondary' id='' value='".__('Reset','csidebars')."' onclick='resettodefaults();'>";
+	echo "</td><td></td><td align='center'>";
 	echo "<input type='submit' class='button-primary' id='plugin-settings-save' value='".__('Save Settings','csidebars')."'>";
 	echo "</td></tr>";
 
 	echo "</table><br></form>";
 
-	// Dummy CSS Textareas
-	echo "<textarea id='defaultcss' style='display:none'>".$vdefaultcss."</textarea>";
-	echo "<textarea id='cssfile' style='display:none'>".$vcssfile."</textarea>";
-	echo "<textarea id='savedcss' style='display:none'>".esc_textarea($vsavedcss)."</textarea>";
+	// --- Hidden CSS Textareas ---
+	echo "<textarea id='defaultcss' style='display:none'>".$defaultcss."</textarea>";
+	echo "<textarea id='cssfile' style='display:none'>".$cssfile."</textarea>";
+	echo "<textarea id='savedcss' style='display:none'>".esc_textarea($savedcss)."</textarea>";
 
 	echo "<br><h4>".__('CSS ID and Class Reference','csidebars').":</h4>";
 	echo "<table cellpadding='5' cellspacing='5'>
@@ -1347,41 +1098,181 @@ function csidebars_options_page() {
 	echo "</div>";
 }
 
+
+// ----------------------
+// === Plugin Helpers ===
+// ----------------------
+// 1.3.5: get global plugin options
+// 1.6.5: removed global plugin settings here as handled by plugin loader
+// global $csidebars; $csidebars = get_option('content_sidebars');
+
+
+// -----------------
+// Set Excerpt State
+// -----------------
+// 1.4.5: added to better handle excerpt output
+global $csidebarsexcerpt; $csidebarsexcerpt = false;
+add_filter('get_the_excerpt', 'csidebars_doing_excerpt_on', 0);
+add_filter('get_the_excerpt', 'csidebars_doing_excerpt_off', 999);
+function csidebars_doing_excerpt_on($excerpt) {global $csidebarsexcerpt; $csidebarsexcerpt = true; return $excerpt;}
+function csidebars_doing_excerpt_off($excerpt) {global $csidebarsexcerpt; $csidebarsexcerpt = false; return $excerpt;}
+
+// ---------------
+// Set Login State
+// ---------------
+// 1.3.5: set login state once for efficiency
+global $csidebarsstate;
+add_action('init', 'csidebars_set_login_state');
+function csidebars_set_login_state() {
+	global $csidebarsstate; $current_user = wp_get_current_user();
+	if ($current_user->exists()) {$csidebarsstate = 'loggedin';}
+	else {$csidebarsstate = 'loggedout';}
+}
+
+// --------------------
+// Set Pageload Context
+// --------------------
+// 1.4.5: added this once-off context checker
+add_action('wp', 'csidebars_set_page_context');
+function csidebars_set_page_context() {
+	global $csidebarscontext, $csidebarsarchive;
+	$csidebarscontext = $csidebarsarchive = '';
+	if (is_front_page()) {$csidebarscontext = 'frontpage';}
+	elseif (is_home()) {$csidebarscontext = 'home';}
+	elseif (is_404()) {$csidebarscontext = '404';}
+	elseif (is_search()) {$csidebarscontext = 'search';}
+	elseif (is_singular()) {$csidebarscontext = 'singular';}
+	elseif (is_archive()) {
+		$csidebarscontext = 'archive';
+		if (is_tag()) {$csidebarsarchive = 'tag';}
+		elseif (is_category()) {$csidebarsarchive = 'category';}
+		elseif (is_tax()) {$csidebarsarchive = 'taxonomy';}
+		elseif (is_author()) {$csidebarsarchive = 'author';}
+		elseif (is_date()) {$csidebarsarchive = 'date';}
+	}
+}
+
+// ---------------------
+// Get Sidebar Overrides
+// ---------------------
+add_action('init', 'csidebars_get_overrides');
+function csidebars_get_overrides() {
+	global $post, $csidebarsoverrides;
+	if (is_object($post)) {
+		$postid = $post->ID;
+		$csidebarsoverrides = get_post_meta($postid, 'content_sidebars', true);
+
+		// maybe set new key value, checking for existing disable metakeys
+		if (!$csidebarsoverrides) {
+			$optionkeys = array(
+				'abovecontentsidebar','belowcontentsidebar','loginsidebar','membersidebar',
+				'shortcodesidebar1','shortcodesidebar2','shortcodesidebar3',
+				'inpostsidebar1','inpostsidebar2','inpostsidebar3'
+			);
+			foreach ($optionkeys as $optionkey) {
+				$newkey = str_replace('sidebar', '', $optionkey);
+				if (get_post_meta($postid, '_disable'.$optionkey, true) == 'yes') {
+					$csidebarsoverrides[$newkey] = 'disable';
+				} else {$csidebarsoverrides[$newkey] = '';}
+			}
+			add_post_meta($postid,'content_sidebars', $csidebarsoverrides, true);
+		}
+	}
+}
+
+// ------------------
+// Get Sidebar Helper
+// ------------------
+function csidebars_get_sidebar($sidebar) {
+	ob_start();
+	dynamic_sidebar($sidebar);
+	$sidebarcontents = ob_get_contents();
+	ob_end_clean();
+	return $sidebarcontents;
+}
+
+// --------------------
+// Check Context Helper
+// --------------------
+function csidebars_check_context($disable, $sidebar) {
+	global $csidebarscontext, $csidebarsarchive;
+
+	$disablein = $disable;
+	if ($csidebarscontext == 'singular') {
+		// --- maybe disable if sidebar not active for this CPT ---
+		global $post; $postid = $post->ID; $posttype = get_post_type($postid);
+		$cptsettings = csidebars_get_setting($sidebar.'_sidebar_cpts', true);
+		if (strstr($cptsettings, ',')) {$activecpts = explode(',', $cptsettings);}
+		else {$activecpts[0] = $cptsettings;}
+	 	if (!in_array($posttype, $activecpts)) {$disable = 'yes';}
+	 	$debug = 'Post Type: '.$posttype.' in '.$cptsettings;
+	} elseif ($csidebarscontext == 'archive') {
+		// --- maybe disable if sidebar not active for this archive ---
+		$archiveoptions = csidebars_get_setting($sidebar.'_sidebar_archives');
+		if (strstr($archiveoptions, ',')) {$archives = explode(',', $archiveoptions);}
+		else {$archives[0] = $archiveoptions;}
+		if (!in_array('archive', $archives)) {
+			if (!in_array($csidebarsarchive, $archives)) {$disable = 'yes';}
+		}
+		$debug = 'Archive: '.$csidebarsarchive.' in '.$archiveoptions;
+	} elseif ($csidebarscontext != '') {
+		// --- maybe disable if sidebar not active for this context ---
+		$pageoptions = csidebars_get_setting($sidebar.'_sidebar_pages');
+		if (strstr($pageoptions, ',')) {$contexts = explode(',', $pageoptions);}
+		else {$contexts[0] = $pageoptions;}
+		if (!in_array($csidebarscontext, $contexts)) {$disable = 'yes';}
+		$debug = 'Page Context: '.$csidebarscontext.' in '.$pageoptions;
+	} else {$disable = 'yes';}
+
+	// --- debug point for disable change ---
+	if ($disablein != $disable) {
+		// echo "<!-- ".$sidebar." sidebar disabled (".$debug.") -->";
+	}
+
+	return $disable;
+}
+
+
 // -------------------------
-// Register Content Sidebars
+// === Register Sidebars ===
 // -------------------------
 
+// ------------------------
+// Register Sidebars Helper
+// ------------------------
 // 1.3.5: added register sidebar abstract helper
-function csidebars_register_sidebar($vsettings) {
+function csidebars_register_sidebar($settings) {
 	register_sidebar(array(
-		'name' => $vsettings['name'],
-		'id' => sanitize_title($vsettings['id']),
-		'description' => $vsettings['description'],
-		'class' => 'content-'.$vsettings['class'],
-		'before_widget' => $vsettings['before_widget'],
-		'after_widget' => $vsettings['after_widget'],
-		'before_title' => $vsettings['before_title'],
-		'after_title' => $vsettings['after_title'],
+		'name' 			=> $settings['name'],
+		'id'			=> sanitize_title($settings['id']),
+		'description'	=> $settings['description'],
+		'class'			=> 'content-'.$settings['class'],
+		'before_widget'	=> $settings['before_widget'],
+		'after_widget'	=> $settings['after_widget'],
+		'before_title'	=> $settings['before_title'],
+		'after_title'	=> $settings['after_title'],
 	) );
 }
 
+// -------------------------
+// Register Content Sidebars
+// -------------------------
 // 1.3.5: use widgets_init action hook instead
 // 1.4.0: declare active and inactive with different priorities
-// add_action('wp_head','csidebars_register_dynamic_sidebars');
-// add_action('admin_head','csidebars_register_dynamic_sidebars');
-add_action('widgets_init','csidebars_register_active_sidebars',11);
-add_action('widgets_init','csidebars_register_inactive_sidebars',13);
+add_action('widgets_init', 'csidebars_register_active_sidebars', 11);
+add_action('widgets_init', 'csidebars_register_inactive_sidebars', 13);
 function csidebars_register_active_sidebars() {csidebars_register_dynamic_sidebars(true);}
 function csidebars_register_inactive_sidebars() {csidebars_register_dynamic_sidebars(false);}
 
 // 1.3.5: register all but split active and inactive sidebars
-function csidebars_register_dynamic_sidebars($vactive=true) {
+function csidebars_register_dynamic_sidebars($active=true) {
 
-	$vactivesidebars = array(); $vinactivesidebars = array();
+	$activesidebars = $inactivesidebars = array();
 
 	if (function_exists('register_sidebar')) {
 
-		$vsidebar = array(
+		// --- Above Content Sidebar ---
+		$sidebar = array(
 			'name' => __('Above Content','csidebars'),
 			'id' => 'AboveContent',
 			'class' => 'on',
@@ -1391,12 +1282,13 @@ function csidebars_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="abovecontenttitle">',
 			'after_title' => '</div>',
 		);
-		if (csidebars_get_option('abovecontent_disable') == 'yes') {
-			$vsidebar['name'] = strtolower($vsidebar['name']);
-			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
-		} else {$vactivesidebars[] = $vsidebar;}
+		if (csidebars_get_setting('abovecontent_disable') == 'yes') {
+			$sidebar['name'] = strtolower($sidebar['name']);
+			$sidebar['class'] = 'off'; $inactivesidebars[] = $sidebar;
+		} else {$activesidebars[] = $sidebar;}
 
-		$vsidebar = array(
+		// --- Below Content Sidebar ---
+		$sidebar = array(
 			'name' => __('Below Content','csidebars'),
 			'id' => 'BelowContent',
 			'class' => 'on',
@@ -1406,12 +1298,13 @@ function csidebars_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="belowcontenttitle">',
 			'after_title' => '</div>',
 		);
-		if (csidebars_get_option('belowcontent_disable') == 'yes') {
-			$vsidebar['name'] = strtolower($vsidebar['name']);
-			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
-		} else {$vactivesidebars[] = $vsidebar;}
+		if (csidebars_get_setting('belowcontent_disable') == 'yes') {
+			$sidebar['name'] = strtolower($sidebar['name']);
+			$sidebar['class'] = 'off'; $inactivesidebars[] = $sidebar;
+		} else {$activesidebars[] = $sidebar;}
 
-		$vsidebar = array(
+		// --- Login Sidebar ---
+		$sidebar = array(
 			'name' => __('Login Sidebar','csidebars'),
 			'id' => 'LoginSidebar',
 			'class' => 'on',
@@ -1421,12 +1314,13 @@ function csidebars_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="loginwidgettitle">',
 			'after_title' => '</div>',
 		);
-		if (csidebars_get_option('loginsidebar_disable') == 'yes') {
-			$vsidebar['name'] = strtolower($vsidebar['name']);
-			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
-		} else {$vactivesidebars[] = $vsidebar;}
+		if (csidebars_get_setting('loginsidebar_disable') == 'yes') {
+			$sidebar['name'] = strtolower($sidebar['name']);
+			$sidebar['class'] = 'off'; $inactivesidebars[] = $sidebar;
+		} else {$activesidebars[] = $sidebar;}
 
-		$vsidebar = array(
+		// --- Member/Logged In Sidebar ---
+		$sidebar = array(
 			'name' => __('Logged In Sidebar','csidebars'),
 			'id' => 'LoggedInSidebar',
 			'class' => 'on',
@@ -1436,12 +1330,13 @@ function csidebars_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="loggedinwidgettitle">',
 			'after_title' => '</div>',
 		);
-		if (csidebars_get_option('membersidebar_disable') == 'yes') {
-			$vsidebar['name'] = strtolower($vsidebar['name']);
-			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
-		} else {$vactivesidebars[] = $vsidebar;}
+		if (csidebars_get_setting('membersidebar_disable') == 'yes') {
+			$sidebar['name'] = strtolower($sidebar['name']);
+			$sidebar['class'] = 'off'; $inactivesidebars[] = $sidebar;
+		} else {$activesidebars[] = $sidebar;}
 
-		$vsidebar = array(
+		// --- Shortcode Sidebar 1 ---
+		$sidebar = array(
 			'name' => __('Shortcode Sidebar','csidebars').' 1',
 			'id' => 'ShortcodeSidebar1',
 			'class' => 'on',
@@ -1451,12 +1346,13 @@ function csidebars_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="shortcodewidgettitle">',
 			'after_title' => '</div>',
 		);
-		if (csidebars_get_option('shortcode1_disable') == 'yes') {
-			$vsidebar['name'] = strtolower($vsidebar['name']);
-			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
-		} else {$vactivesidebars[] = $vsidebar;}
+		if (csidebars_get_setting('shortcode1_disable') == 'yes') {
+			$sidebar['name'] = strtolower($sidebar['name']);
+			$sidebar['class'] = 'off'; $inactivesidebars[] = $sidebar;
+		} else {$activesidebars[] = $sidebar;}
 
-		$vsidebar = array(
+		// --- Shortcode Sidebar 2 ---
+		$sidebar = array(
 			'name' => __('Shortcode Sidebar','csidebars').' 2',
 			'id' => 'ShortcodeSidebar2',
 			'class' => 'on',
@@ -1466,12 +1362,13 @@ function csidebars_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="shortcodewidgetitle">',
 			'after_title' => '</div>',
 		);
-		if (csidebars_get_option('shortcode2_disable') == 'yes') {
-			$vsidebar['name'] = strtolower($vsidebar['name']);
-			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
-		} else {$vactivesidebars[] = $vsidebar;}
+		if (csidebars_get_setting('shortcode2_disable') == 'yes') {
+			$sidebar['name'] = strtolower($sidebar['name']);
+			$sidebar['class'] = 'off'; $inactivesidebars[] = $sidebar;
+		} else {$activesidebars[] = $sidebar;}
 
-		$vsidebar = array(
+		// --- Shortcode Sidebar 3 ---
+		$sidebar = array(
 			'name' => __('Shortcode Sidebar','csidebars').' 3',
 			'id' => 'ShortcodeSidebar3',
 			'class' => 'on',
@@ -1481,12 +1378,13 @@ function csidebars_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="shortcodewidgettitle">',
 			'after_title' => '</div>',
 		);
-		if (csidebars_get_option('shortcode3_disable') == 'yes') {
-			$vsidebar['name'] = strtolower($vsidebar['name']);
-			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
-		} else {$vactivesidebars[] = $vsidebar;}
+		if (csidebars_get_setting('shortcode3_disable') == 'yes') {
+			$sidebar['name'] = strtolower($sidebar['name']);
+			$sidebar['class'] = 'off'; $inactivesidebars[] = $sidebar;
+		} else {$activesidebars[] = $sidebar;}
 
-		$vsidebar = array(
+		// --- InPost Sidebar 1 ---
+		$sidebar = array(
 			'name' => __('InPost','csidebars').' 1',
 			'id' => 'InPost1',
 			'class' => 'on',
@@ -1496,12 +1394,13 @@ function csidebars_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="inpostwidgettitle">',
 			'after_title' => '</div>',
 		);
-		if (csidebars_get_option('inpost1_disable') == 'yes') {
-			$vsidebar['name'] = strtolower($vsidebar['name']);
-			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
-		} else {$vactivesidebars[] = $vsidebar;}
+		if (csidebars_get_setting('inpost1_disable') == 'yes') {
+			$sidebar['name'] = strtolower($sidebar['name']);
+			$sidebar['class'] = 'off'; $inactivesidebars[] = $sidebar;
+		} else {$activesidebars[] = $sidebar;}
 
-		$vsidebar = array(
+		// --- InPost Sidebar 2 ---
+		$sidebar = array(
 			'name' => __('InPost','csidebars').' 2',
 			'id' => 'InPost2',
 			'class' => 'on',
@@ -1511,12 +1410,13 @@ function csidebars_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="inpostwidgettitle">',
 			'after_title' => '</div>',
 		);
-		if (csidebars_get_option('inpost2_disable') == 'yes') {
-			$vsidebar['name'] = strtolower($vsidebar['name']);
-			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
-		} else {$vactivesidebars[] = $vsidebar;}
+		if (csidebars_get_setting('inpost2_disable') == 'yes') {
+			$sidebar['name'] = strtolower($sidebar['name']);
+			$sidebar['class'] = 'off'; $inactivesidebars[] = $sidebar;
+		} else {$activesidebars[] = $sidebar;}
 
-		$vsidebar = array(
+		// --- InPost Sidebar 3 ---
+		$sidebar = array(
 			'name' => __('InPost','csidebars').' 3',
 			'id' => 'InPost3',
 			'class' => 'on',
@@ -1526,86 +1426,49 @@ function csidebars_register_dynamic_sidebars($vactive=true) {
 			'before_title' => '<div class="inpostwidgettitle">',
 			'after_title' => '</div>',
 		);
-		if (csidebars_get_option('inpost3_disable') == 'yes') {
-			$vsidebar['name'] = strtolower($vsidebar['name']);
-			$vsidebar['class'] = 'off'; $vinactivesidebars[] = $vsidebar;
-		} else {$vactivesidebars[] = $vsidebar;}
+		if (csidebars_get_setting('inpost3_disable') == 'yes') {
+			$sidebar['name'] = strtolower($sidebar['name']);
+			$sidebar['class'] = 'off'; $inactivesidebars[] = $sidebar;
+		} else {$activesidebars[] = $sidebar;}
 
-		$vallwidgets = wp_get_sidebars_widgets();
-		// print_r($vallwidgets);
+		// --- get all widgets ---
+		// 1.6.5: only count sidebar widgets on widgets page
+		global $pagenow;
+		if (is_admin() && ($pagenow == 'widgets.php')) {$allwidgets = wp_get_sidebars_widgets();}
+		// print_r($allwidgets);
 
+		// --- register active sidebars ---
 		// 1.3.5: register active then inactive sidebars
 		// 1.4.0: register with different priorities
-		if ( ($vactive) && (count($vactivesidebars) > 0) ) {
-			foreach ($vactivesidebars as $vsidebar) {
+		if ($active && (count($activesidebars) > 0)) {
+			foreach ($activesidebars as $sidebar) {
 				// 1.4.0: add widget count to sidebar label
-				if ( (is_admin()) && (is_active_sidebar($vsidebar['id'])) ) {
-					$vwidgetcount = count($vallwidgets[strtolower($vsidebar['id'])]);
-					$vsidebar['name'] .= ' ('.$vwidgetcount.')';
+				// 1.6.5: only add widget count on widget.php page
+				if (is_admin() && ($pagenow == 'widgets.php') && is_active_sidebar($sidebar['id'])) {
+					$widgetcount = count($allwidgets[strtolower($sidebar['id'])]);
+					$sidebar['name'] .= ' ('.$widgetcount.')';
 				}
-				csidebars_register_sidebar($vsidebar);
-			}
-		}
-		if ( (!$vactive) && (count($vinactivesidebars) > 0) ) {
-			foreach ($vinactivesidebars as $vsidebar) {
-				// 1.4.0: add widget count to sidebar label
-				if ( (is_admin()) && (is_active_sidebar($vsidebar['id'])) ) {
-					$vwidgetcount = count($vallwidgets[strtolower($vsidebar['id'])]);
-					$vsidebar['name'] .= ' ('.$vwidgetcount.')';
-				}
-				csidebars_register_sidebar($vsidebar);
+				csidebars_register_sidebar($sidebar);
 			}
 		}
 
-	}
-}
-
-// Shortcode Filters
-// -----------------
-// 1.3.5: added these widget shortcode filter options
-add_action('init','csidebars_process_shortcodes');
-function csidebars_process_shortcodes() {
-
-	// widget text shortcodes
-	// note: this may be unnecessary now (https://core.trac.wordpress.org/changeset/41361)
-	if (csidebars_get_option('widget_text_shortcodes',true)) {
-		if (!has_filter('widget_text', 'do_shortcode')) {add_filter('widget_text', 'do_shortcode');}
-	}
-	// widget title shortcodes
-	if (csidebars_get_option('widget_title_shortcodes',true)) {
-		if (!has_filter('widget_title', 'do_shortcode')) {add_filter('widget_title', 'do_shortcode');}
-	}
-	// shortcodes in excerpts
-	if (csidebars_get_option('excerpt_shortcodes',false)) {
-		// add_filter('wp_trim_excerpt','csidebars_excerpt_with_shortcodes');
-		if (has_filter('get_the_excerpt', 'wp_trim_excerpt')) {
-			remove_filter('get_the_excerpt', 'wp_trim_excerpt');
-			add_filter('get_the_excerpt', 'csidebars_excerpt_with_shortcodes');
+		// --- register inactive sidebars ---
+		if (!$active && (count($inactivesidebars) > 0)) {
+			foreach ($inactivesidebars as $sidebar) {
+				// 1.4.0: add widget count to sidebar label
+				// 1.6.5: only add widget count on widget.php page
+				if (is_admin() && ($pagenow == 'widgets.php') && is_active_sidebar($sidebar['id'])) {
+					$widgetcount = count($allwidgets[strtolower($sidebar['id'])]);
+					$sidebar['name'] .= ' ('.$widgetcount.')';
+				}
+				csidebars_register_sidebar($sidebar);
+			}
 		}
-		// 1.5.9: fix to old function prefix
-		add_shortcode('testexcerptshortcode', 'csidebars_test_excerpts');
-		function csidebars_test_excerpts() {return 'This shortcode will display in excerpts now.';}
+
 	}
 }
 
-// Excerpts with Shortcodes
-// ------------------------
-// 1.4.5: copy of wp_trim_excerpt but with shortcodes kept
-// note: formatting is still stripped but shortcode text remains
-function csidebars_excerpt_with_shortcodes($text) {
-	// for use in shortcodes to provide alternative output
-	global $doingexcerpt; $doingexcerpt = true;
-
-	$text = get_the_content('');
-	// $text = strip_shortcodes( $text ); // modification
-	$text = apply_filters('the_content', $text);
-	$text = str_replace(']]>', ']]&gt;', $text);
-	$excerpt_length = apply_filters('excerpt_length', 55);
-	$excerpt_more = apply_filters('excerpt_more', ' ' . '[&hellip;]');
-	$text = wp_trim_words( $text, $excerpt_length, $excerpt_more );
-	$doingexcerpt = false; return $text;
-}
-
+// -----------------------------
 // Register Discreet Text Widget
 // -----------------------------
 // 1.3.5: added this super-handy widget type
@@ -1618,593 +1481,758 @@ function csidebars_discreet_text_widget() {
 	if (!class_exists('DiscreetTextWidget')) {
 		class DiscreetTextWidget extends WP_Widget_Text {
 			function __construct() {
-				$vwidgetops = array('classname' => 'discreet_text_widget', 'description' => __('Arbitrary text or HTML, only shown if not empty.','csidebars'));
-				$vcontrolops = array('width' => 400, 'height' => 350);
+				$widgetops = array('classname' => 'discreet_text_widget', 'description' => __('Arbitrary text or HTML, only shown if not empty.','csidebars'));
+				$controlops = array('width' => 400, 'height' => 350);
 				// 1.4.0: fix to deprecated class construction method
-				call_user_func(array(get_parent_class(get_parent_class($this)), '__construct'), 'discrete_text', __('Discreet Text','csidebars'), $vwidgetops, $vcontrolops);
-				// parent::__construct('discrete_text', __('Discreet Text','csidebars'), $vwidgetops, $vcontrolops);
-				// $this->WP_Widget('discrete_text', 'Discreet Text', $vwidgetops, $vcontrolops);
+				call_user_func(array(get_parent_class(get_parent_class($this)), '__construct'), 'discrete_text', __('Discreet Text','csidebars'), $widgetops, $controlops);
+				// parent::__construct('discrete_text', __('Discreet Text','csidebars'), $widgetops, $controlops);
+				// $this->WP_Widget('discrete_text', 'Discreet Text', $widgetops, $controlops);
 			}
-			function widget($vargs,$vinstance) {
-				// echo "<!-- DEBUG"; print_r($vargs); print_r($vinstance); echo "-->";
-				$vtext = apply_filters('widget_text', $vinstance['text']);
-				if (empty($vtext)) {return;}
+			function widget($args, $instance) {
+				// echo "<!-- DEBUG"; print_r($args); print_r($instance); echo "-->";
+				$text = apply_filters('widget_text', $instance['text']);
+				if (empty($text)) {return;}
 
-				echo $vargs['before_widget'];
-				$vtitle = apply_filters('widget_title', empty($vinstance['title']) ? '' : $vinstance['title']);
-				if (!empty($vtitle)) {echo $vargs['before_title'].$vtitle.$vargs['after_title'];}
+				echo $args['before_widget'];
+				$title = apply_filters('widget_title', empty($instance['title']) ? '' : $instance['title']);
+				if (!empty($title)) {echo $args['before_title'].$title.$args['after_title'];}
 				echo '<div class="textwidget">';
-				echo $vinstance['filter'] ? wpautop($vtext) : $vtext;
+				echo $instance['filter'] ? wpautop($text) : $text;
 				echo '</div>';
-				echo $vargs['after_widget'];
+				echo $args['after_widget'];
 			}
 		}
 		return register_widget("DiscreetTextWidget");
 	}
 }
 
-// -------------
-// Login Sidebar
-// -------------
 
-// Login Sidebar Setup
-// -------------------
-// 1.3.5: just enqueue and perform checks within action
-add_action('init','csidebars_login_sidebar_setup');
-function csidebars_login_sidebar_setup() {
-	$vloginsidebarhook = csidebars_get_option('loginsidebar_hook', true);
-	$vloginsidebarpriority = csidebars_get_option('loginsidebar_priority', true);
-	add_action($vloginsidebarhook, 'csidebars_login_sidebar_output', $vloginsidebarpriority);
+// ------------------
+// === Shortcodes ===
+// ------------------
+
+// -----------------
+// Shortcode Filters
+// -----------------
+// 1.3.5: added these widget shortcode filter options
+add_action('init','csidebars_process_shortcodes');
+function csidebars_process_shortcodes() {
+
+	// --- widget text shortcodes ---
+	// note: this may be unnecessary now (https://core.trac.wordpress.org/changeset/41361)
+	if (csidebars_get_setting('widget_text_shortcodes')) {
+		if (!has_filter('widget_text', 'do_shortcode')) {add_filter('widget_text', 'do_shortcode');}
+	}
+	// --- widget title shortcodes ---
+	if (csidebars_get_setting('widget_title_shortcodes')) {
+		if (!has_filter('widget_title', 'do_shortcode')) {add_filter('widget_title', 'do_shortcode');}
+	}
+	// --- shortcodes in excerpts ---
+	if (csidebars_get_setting('excerpt_shortcodes')) {
+		// add_filter('wp_trim_excerpt','csidebars_excerpt_with_shortcodes');
+		if (has_filter('get_the_excerpt', 'wp_trim_excerpt')) {
+			remove_filter('get_the_excerpt', 'wp_trim_excerpt');
+			add_filter('get_the_excerpt', 'csidebars_excerpt_with_shortcodes');
+		}
+
+		// --- excerpt shortcode tester ---
+		// 1.5.9: fix to old function prefix
+		add_shortcode('testexcerptshortcode', 'csidebars_test_excerpts');
+		function csidebars_test_excerpts() {return 'This shortcode will display in excerpts now.';}
+	}
 }
-function csidebars_login_sidebar_output() {echo csidebars_login_sidebar();}
 
-// Login Sidebar
-// -------------
+// ------------------------
+// Excerpts with Shortcodes
+// ------------------------
+// 1.4.5: copy of wp_trim_excerpt but with shortcodes kept
+// note: formatting is still stripped but shortcode text remains
+function csidebars_excerpt_with_shortcodes($text) {
+
+	// for use in shortcodes to provide alternative output
+	global $doingexcerpt; $doingexcerpt = true;
+
+	$text = get_the_content('');
+	// $text = strip_shortcodes( $text ); // modification
+	$text = apply_filters('the_content', $text);
+	$text = str_replace(']]>', ']]&gt;', $text);
+	$excerpt_length = apply_filters('excerpt_length', 55);
+	$excerpt_more = apply_filters('excerpt_more', ' ' . '[&hellip;]');
+	$text = wp_trim_words($text, $excerpt_length, $excerpt_more);
+	$doingexcerpt = false;
+
+	return $text;
+}
+
+
+// ---------------------
+// === Login Sidebar ===
+// ---------------------
+
+// -----------------
+// Add Login Sidebar
+// -----------------
+// 1.3.5: just enqueue and perform checks within action
+// 1.6.5: added check if priority is 0 or above
+add_action('init', 'csidebars_login_sidebar_setup');
+function csidebars_login_sidebar_setup() {
+	$hook = csidebars_get_setting('loginsidebar_hook');
+	$priority = csidebars_get_setting('loginsidebar_priority');
+	if ($priority > -1) {add_action($hook, 'csidebars_login_sidebar_output', $priority);}
+}
+
+// --------------------
+// Login Sidebar Output
+// --------------------
+function csidebars_login_sidebar_output() {echo csidebars_login_sidebar();}
 function csidebars_login_sidebar() {
 
-	global $vcsidebarsoverrides, $vcsidebarsstate;
-	$vdisable = csidebars_get_option('loginsidebar_disable');
+	global $csidebarsoverrides, $csidebarsstate;
 
+	// --- check if disabled in context ---
 	// 1.4.5: check new page contexts
-	$vdisable = csidebars_check_context($vdisable,'login');
-	// 1.5.5: make this a separate override filter
-	$vdisable = apply_filters('csidebars_loginsidebar_override', $vdisable);
+	// 1.5.5: added a separate override filter
+	$disable = csidebars_get_setting('loginsidebar_disable');
+	$disable = csidebars_check_context($disable, 'login');
+	$disable = apply_filters('csidebars_loginsidebar_override', $disable);
 
+	// --- maybe fallback if logged in ---
 	// 1.3.0: fix for option typo
-	$vfallback = csidebars_get_option('loginsidebar_fallback', true);
-	if ( ($vfallback == 'nooutput') && ($vcsidebarsstate == 'loggedin') ) {return '';}
-	if ($vfallback == 'fallback') {
-		if ( ($vdisable != 'yes') && ($vcsidebarsstate == 'loggedin') ) {
+	$fallback = csidebars_get_setting('loginsidebar_fallback', true);
+	if ( ($fallback == 'nooutput') && ($csidebarsstate == 'loggedin') ) {return '';}
+	if ($fallback == 'fallback') {
+		if ( ($disable != 'yes') && ($csidebarsstate == 'loggedin') ) {
+
+			// --- check logged in sidebar mode ---
 			// 1.4.5: check mode and call to member sidebar function
-			$vmode = csidebars_get_option('membersidebar_mode', 'fallback');
-			if ($vmode == 'standalone') {return '';}
-			$vsidebar = PHP_EOL.'<div id="loginsidebar" class="contentsidebar loggedinsidebar">';
-			$vsidebar .= csidebars_member_sidebar();
-			$vsidebar .= '</div>'.PHP_EOL.PHP_EOL;
+			$mode = csidebars_get_setting('membersidebar_mode', 'fallback');
+			if ($mode == 'standalone') {return '';}
+
+			// --- check logged in sidebar override ---
+			// 1.6.5: added missing override check
+			if (isset($csidebarsoverrides['member']) && ($csidebarsoverrides['member'] == 'disable')) {return;}
+
+			// --- get logged in sidebar ---
+			$sidebar = PHP_EOL.'<div id="loginsidebar" class="contentsidebar loggedinsidebar">'.PHP_EOL;
+			$sidebar .= csidebars_member_sidebar();
+			$sidebar .= '</div>'.PHP_EOL.PHP_EOL;
+
+			// --- filter logged in sidebar ---
 			// 1.5.5: apply backward compatible and new filter prefix
-			$vsidebar = apply_filters('fcs_login_sidebar_loggedin', $vsidebar);
-			$vsidebar = apply_filters('csidebars_login_sidebar_loggedin', $vsidebar);
-			return $vsidebar;
+			// 1.6.5: removed old fcs prefixed filter
+			// $sidebar = apply_filters('fcs_login_sidebar_loggedin', $sidebar);
+			$sidebar = apply_filters('csidebars_login_sidebar_loggedin', $sidebar);
+			return $sidebar;
 		}
 	}
 
-	// if (get_post_meta($vpostid,'_disableloginsidebar',true) == 'yes') {$vdisable = 'yes';}
-	if (isset($vcsidebarsoverrides['login'])) {
-		if ($vcsidebarsoverrides['login'] == 'enable') {$vdisable = '';}
-		if ($vcsidebarsoverrides['login'] == 'disable') {$vdisable = 'yes';}
+	// --- check login sidebar overrides ---
+	// if (get_post_meta($postid,'_disableloginsidebar',true) == 'yes') {$disable = 'yes';}
+	if (isset($csidebarsoverrides['login'])) {
+		if ($csidebarsoverrides['login'] == 'enable') {$disable = '';}
+		elseif ($csidebarsoverrides['login'] == 'disable') {$disable = 'yes';}
 	}
 
-	if ($vdisable != 'yes') {
-		if (is_active_sidebar('LoginSidebar')) {
-			if ($vfallback == 'hidden') {$vhidden = ' style="display:none;"';} else {$vhidden = '';}
-			$vsidebar = PHP_EOL.'<div id="loginsidebar" class="contentsidebar loggedoutsidebar"'.$vhidden.'>';
-			$vsidebar .= csidebars_get_sidebar('LoginSidebar');
-			$vsidebar .= '</div>'.PHP_EOL.PHP_EOL;
-		} else {$vsidebar = '';}
+	// --- bug out if disabled ---
+	if ($disable == 'yes') {return '';}
 
-		// 1.5.5: apply backward compatible and new filter prefix
-		$vsidebar = apply_filters('fcs_login_sidebar', $vsidebar);
-		$vsidebar = apply_filters('csidebars_login_sidebar', $vsidebar);
-		$vsidebar = apply_filters('fcs_login_sidebar_loggedout', $vsidebar);
-		$vsidebar = apply_filters('csidebars_login_sidebar_loggedout', $vsidebar);
-		return $vsidebar;
-	}
-	return '';
+	// --- get login sidebar ---
+	if (is_active_sidebar('LoginSidebar')) {
+		if ($fallback == 'hidden') {$hidden = ' style="display:none;"';} else {$hidden = '';}
+		$sidebar = PHP_EOL.'<div id="loginsidebar" class="contentsidebar loggedoutsidebar"'.$hidden.'>'.PHP_EOL;
+		$sidebar .= csidebars_get_sidebar('LoginSidebar');
+		$sidebar .= '</div>'.PHP_EOL.PHP_EOL;
+	} else {$sidebar = '';}
+
+	// --- filter and return login sidebar ---
+	// 1.5.5: apply backward compatible and new filter prefix
+	// 1.6.5: removed old fcs prefixed filters
+	// $sidebar = apply_filters('fcs_login_sidebar', $sidebar);
+	$sidebar = apply_filters('csidebars_login_sidebar', $sidebar);
+	// $sidebar = apply_filters('fcs_login_sidebar_loggedout', $sidebar);
+	$sidebar = apply_filters('csidebars_login_sidebar_loggedout', $sidebar);
+	return $sidebar;
 }
 
-// --------------
-// Member Sidebar
-// --------------
 
-// Member Sidebar Setup
-// --------------------
+// ----------------------
+// === Member Sidebar ===
+// ----------------------
+// (aka Logged In Sidebar)
+
+// ------------------
+// Add Member Sidebar
+// ------------------
 // 1.4.5: added member sidebar mode options
-add_action('init','csidebars_member_sidebar_setup');
+add_action('init', 'csidebars_member_sidebar_setup');
 function csidebars_member_sidebar_setup() {
-	$vmembersidebarmode = csidebars_get_option('membersidebar_mode','fallback');
-	if ( ($vmembersidebarmode == 'standalone') || ($vmembersidebarmode == 'both') ) {
-		$vmembersidebarhook = csidebars_get_option('membersidebar_hook', true);
-		$vmembersidebarpriority = csidebars_get_option('membersidebar_priority', true);
-		add_action($vmembersidebarhook,'csidebars_member_sidebar_output', $vmembersidebarpriority);
+	// 1.6.5: removed fallback argument from get_setting
+	$mode = csidebars_get_setting('membersidebar_mode');
+	if ( ($mode == 'standalone') || ($mode == 'both') ) {
+		$hook = csidebars_get_setting('membersidebar_hook');
+		$priority = csidebars_get_setting('membersidebar_priority');
+		add_action($hook, 'csidebars_member_sidebar_output', $priority);
 	}
 }
-function csidebars_member_sidebar_output() {echo csidebars_member_sidebar(true);}
 
-// Member Sidebar
-// --------------
+// ---------------------
+// Member Sidebar Output
+// ---------------------
 // 1.4.5: added standalone member sidebar function
-function csidebars_member_sidebar($vstandalone=false) {
+function csidebars_member_sidebar_output() {echo csidebars_member_sidebar(true);}
+function csidebars_member_sidebar($standalone=false) {
 
-	global $vcsidebarsoverrides, $vcsidebarsstate;
-	$vdisable = csidebars_get_option('membersidebar_disable');
+	global $csidebarsoverrides, $csidebarsstate;
 
+	// --- check if disabled for context ---
 	// 1.4.5: check new page contexts
-	$vdisable = csidebars_check_context($vdisable,'member');
-	// 1.5.5: made this a separate override filter
-	$vdisable = apply_filters('csidebars_membersidebar_override', $vdisable);
+	// 1.5.5: added separate override filter
+	$disable = csidebars_get_setting('membersidebar_disable');
+	$disable = csidebars_check_context($disable, 'member');
+	$disable = apply_filters('csidebars_membersidebar_override', $disable);
 
-	// if (get_post_meta($vpostid,'_disablemembersidebar',true) == 'yes') {$vdisable = 'yes';}
-	if (isset($vcsidebarsoverrides['member'])) {
-		if ($vcsidebarsoverrides['member'] == 'enable') {$vdisable = '';}
-		if ($vcsidebarsoverrides['member'] == 'disable') {$vdisable = 'yes';}
+	// --- check disable override ---
+	// if (get_post_meta($postid,'_disablemembersidebar',true) == 'yes') {$disable = 'yes';}
+	if (isset($csidebarsoverrides['member'])) {
+		if ($csidebarsoverrides['member'] == 'enable') {$disable = '';}
+		if ($csidebarsoverrides['member'] == 'disable') {$disable = 'yes';}
 	}
 
-	if ($vdisable != 'yes') {
-		if (is_active_sidebar('LoggedInSidebar')) {
-			if ($vstandalone) {
-				// 1.3.0: fix for logged in sidebar name
-				$vsidebar = PHP_EOL.'<div id="membersidebar" class="contentsidebar loggedinsidebar">';
-				$vsidebar .= csidebars_get_sidebar('LoggedInSidebar');
-				$vsidebar .= '</div>'.PHP_EOL.PHP_EOL;
-			} else {$vsidebar = csidebars_get_sidebar('LoggedInSidebar');}
-		} else {$vsidebar = '';}
+	// --- bug out if disabled ---
+	if ($disable = 'yes') {return '';}
 
-		// 1.5.5: apply backward compatible and new filter prefix
-		$vsidebar = apply_filters('fcs_member_sidebar', $vsidebar);
-		$vsidebar = apply_filters('csidebars_member_sidebar', $vsidebar);
-		$vsidebar = apply_filters('fcs_member_sidebar_loggedin', $vsidebar);
-		$vsidebar = apply_filters('csidebars_member_sidebar_loggedin', $vsidebar);
-		return $vsidebar;
-	} else {return '';}
+	// --- get member sidebar ---
+	if (is_active_sidebar('LoggedInSidebar')) {
+		if ($standalone) {
+			// 1.3.0: fix for logged in sidebar name
+			$sidebar = PHP_EOL.'<div id="membersidebar" class="contentsidebar loggedinsidebar">'.PHP_EOL;
+			$sidebar .= csidebars_get_sidebar('LoggedInSidebar');
+			$sidebar .= '</div>'.PHP_EOL.PHP_EOL;
+		} else {$sidebar = csidebars_get_sidebar('LoggedInSidebar');}
+	} else {$sidebar = '';}
+
+	// --- filter and return member sidebar ---
+	// 1.5.5: apply backward compatible and new filter prefix
+	// 1.6.5: removed old fcs prefixed filters
+	// $sidebar = apply_filters('fcs_member_sidebar', $sidebar);
+	$sidebar = apply_filters('csidebars_member_sidebar', $sidebar);
+	// $sidebar = apply_filters('fcs_member_sidebar_loggedin', $sidebar);
+	$sidebar = apply_filters('csidebars_member_sidebar_loggedin', $sidebar);
+	return $sidebar;
 }
 
 
-// Above/Below Method Actions
-// --------------------------
+// ------------------------------
+// === Above / Below Sidebars ===
+// ------------------------------
+
+// ------------------------------------
+// Above / Below Sidebar Method Actions
+// ------------------------------------
 // 1.3.5: just enqueue and check disable within actions
 // 1.3.5: added filters to hooks and priorities
 // 1.4.5: change to use output function wrappers
 add_action('init','csidebars_content_sidebars_setup');
 function csidebars_content_sidebars_setup() {
-	$vmethod = csidebars_get_option('abovebelow_method', true);
-	if ($vmethod == 'hooks') {
-		// add to above content hook
-		$vhook = csidebars_get_option('abovecontent_hook', true);
-		$vpriority = csidebars_get_option('abovecontent_priority', true);
-		add_action($vhook,'csidebars_abovecontent_sidebar_output', $vpriority);
+	$method = csidebars_get_setting('abovebelow_method');
+	if ($method == 'hooks') {
+		// --- add to above content hook ---
+		$hook = csidebars_get_setting('abovecontent_hook');
+		$priority = csidebars_get_setting('abovecontent_priority');
+		add_action($hook, 'csidebars_abovecontent_sidebar_output', $priority);
 
-		// add to below content hook
-		$vhook = csidebars_get_option('belowcontent_hook', true);
-		$vpriority = csidebars_get_option('belowcontent_priority', true);
-		add_action($vhook,'csidebars_belowcontent_sidebar_output', $vpriority);
-	} elseif ($vmethod == 'filter') {
+		// --- add to below content hook ---
+		$hook = csidebars_get_setting('belowcontent_hook');
+		$priority = csidebars_get_setting('belowcontent_priority');
+		add_action($hook, 'csidebars_belowcontent_sidebar_output', $priority);
+	} elseif ($method == 'filter') {
+		// --- add via content filter ---
 		add_filter('the_content','csidebars_add_content_sidebars', 999);
 	}
 }
 
-// Above Content Sidebar
-// ---------------------
+// ----------------------------
+// Above Content Sidebar Output
+// ----------------------------
 function csidebars_abovecontent_sidebar_output() {echo csidebars_abovecontent_sidebar();}
 function csidebars_abovecontent_sidebar() {
 
-	global $vcsidebarsoverrides, $vcsidebarsstate;
-	$vdisable = csidebars_get_option('abovecontent_disable');
-	// 1.6.1: set empty sidebar to avoid warning
-	$vsidebar = '';
+	global $csidebarsoverrides, $csidebarsstate;
 
+	// --- check if disabled for context ---
 	// 1.4.5: check new page contexts
-	$vdisable = csidebars_check_context($vdisable, 'abovecontent');
-	// 1.5.5: made this a separate override filter
-	$vdisable = apply_filters('csidebars_abovecontent_override', $vdisable);
+	// 1.5.5: added a separate override filter
+	$disable = csidebars_get_setting('abovecontent_disable');
+	$disable = csidebars_check_context($disable, 'abovecontent');
+	$disable = apply_filters('csidebars_abovecontent_override', $disable);
 
-	// check if logged in and fallback
-	$vfallback = csidebars_get_option('abovecontent_fallback',true);
-	if ( ($vfallback == 'nooutput') && ($vcsidebarsstate == 'loggedin') ) {return '';}
-	if ($vfallback == 'fallback') {
-		if ( ($vdisable != 'yes') && ($vcsidebarsstate == 'loggedin') ) {
+	// --- check disable override ---
+	// if (get_post_meta($postid,'_disableabovecontentsidebar', true) == 'yes') {$disable = 'yes';}
+	if (isset($csidebarsoverrides['abovecontent'])) {
+		if ($csidebarsoverrides['abovecontent'] == 'disable') {$disable = 'yes';}
+		if ($csidebarsoverrides['abovecontent'] == 'enable') {$disable = '';}
+	}
+
+	// --- maybe fallback to logged in sidebar ---
+	$fallback = csidebars_get_setting('abovecontent_fallback');
+	if ( ($fallback == 'nooutput') && ($csidebarsstate == 'loggedin') ) {return '';}
+	if ($fallback == 'fallback') {
+		if ( ($disable != 'yes') && ($csidebarsstate == 'loggedin') ) {
+
+			// --- get members sidebar ---
 			// 1.4.5: check mode and call to member sidebar function
-			$vmode = csidebars_get_option('membersidebar_mode', 'fallback');
-			if ($vmode == 'standalone') {return '';}
-			$vsidebar = '<div id="abovecontentsidebar" class="contentsidebar loggedinsidebar">';
-			$vsidebar .= csidebars_member_sidebar();
-			$vsidebar .= "</div>";
+			$mode = csidebars_get_setting('membersidebar_mode', 'fallback');
+			if ($mode == 'standalone') {return '';}
+			$sidebar = '<div id="abovecontentsidebar" class="contentsidebar loggedinsidebar">'.PHP_EOL;
+			$sidebar .= csidebars_member_sidebar();
+			$sidebar .= "</div>";
+
+			// --- filter sidebar and return ---
 			// 1.5.5: apply backward compatible and new filter prefix
-			$vsidebar = apply_filters('fcs_abovecontent_sidebar_loggedin', $vsidebar);
-			$vsidebar = apply_filters('csidebars_abovecontent_sidebar_loggedin', $vsidebar);
-			return $vsidebar;
-		}
+			// 1.6.5: removed old fcs prefixed filter
+			// $sidebar = apply_filters('fcs_abovecontent_sidebar_loggedin', $sidebar);
+			$sidebar = apply_filters('csidebars_abovecontent_sidebar_loggedin', $sidebar);
+			return $sidebar;
+		} else {return '';}
+	} // otherwise, fall forward haha ---
+
+	// --- bug out if disabled ---
+	if ($disable == 'yes') {return '';}
+
+	// --- get above content sidebar ---
+	if (is_active_sidebar('AboveContent')) {
+		if ($fallback == 'hidden') {$hidden = ' style="display:none;"';} else {$hidden = '';}
+		// 1.4.5: replaced loggedout with login state variable class
+		$sidebar = PHP_EOL.'<div id="abovecontentsidebar" class="contentsidebar '.$csidebarsstate.'sidebar"'.$hidden.'>'.PHP_EOL;
+		$sidebar .= csidebars_get_sidebar('AboveContent');
+		$sidebar .= '</div>'.PHP_EOL;
 	}
 
-	// otherwise, fall forward haha
-	// if (get_post_meta($vpostid,'_disableabovecontentsidebar', true) == 'yes') {$vdisable = 'yes';}
-	if (isset($vcsidebarsoverrides['abovecontent'])) {
-		if ($vcsidebarsoverrides['abovecontent'] == 'disable') {$vdisable = 'yes';}
-		if ($vcsidebarsoverrides['abovecontent'] == 'enable') {$vdisable = '';}
-	}
-	if ($vdisable != 'yes') {
-		if (is_active_sidebar('AboveContent')) {
-			if ($vfallback == 'hidden') {$vhidden = ' style="display:none;"';} else {$vhidden = '';}
-			// 1.4.5: replaced loggedout with login state variable class
-			$vsidebar = PHP_EOL.'<div id="abovecontentsidebar" class="contentsidebar '.$vcsidebarsstate.'sidebar"'.$vhidden.'>';
-			$vsidebar .= csidebars_get_sidebar('AboveContent');
-			$vsidebar .= '</div>'.PHP_EOL;
-		}
-
-		// 1.5.5: apply backward compatible and new filter prefix
-		$vsidebar = apply_filters('fcs_abovecontent_sidebar', $vsidebar);
-		$vsidebar = apply_filters('csidebars_abovecontent_sidebar', $vsidebar);
-		$vsidebar = apply_filters('fcs_abovecontent_sidebar_'.$vcsidebarsstate, $vsidebar);
-		$vsidebar = apply_filters('csidebars_abovecontent_sidebar_'.$vcsidebarsstate, $vsidebar);
-		return $vsidebar;
-	}
-	return '';
+	// --- filter above content sidebar and return ---
+	// 1.5.5: apply backward compatible and new filter prefix
+	// 1.6.5: removed old fcs prefixed filters
+	// $sidebar = apply_filters('fcs_abovecontent_sidebar', $sidebar);
+	$sidebar = apply_filters('csidebars_abovecontent_sidebar', $sidebar);
+	// $sidebar = apply_filters('fcs_abovecontent_sidebar_'.$csidebarsstate, $sidebar);
+	$sidebar = apply_filters('csidebars_abovecontent_sidebar_'.$csidebarsstate, $sidebar);
+	return $sidebar;
 }
 
-// Below Content Sidebar
-// ---------------------
+// ----------------------------
+// Below Content Sidebar Output
+// ----------------------------
 function csidebars_belowcontent_sidebar_output() {echo csidebars_belowcontent_sidebar();}
 function csidebars_belowcontent_sidebar() {
 
-	global $vcsidebarsoverrides, $vcsidebarsstate;
-	$vdisable = csidebars_get_option('belowcontent_disable');
-	// 1.6.1: set empty sidebar to avoid warning
-	$vsidebar = '';
+	global $csidebarsoverrides, $csidebarsstate;
 
+	// --- check if disabled for context ---
 	// 1.4.5: check new page contexts
-	$vdisable = csidebars_check_context($vdisable,'belowcontent');
-	// 1.5.5: made this a separate override filter
-	$vdisable = apply_filters('csidebars_belowcontent_override', $vdisable);
+	// 1.5.5: added separate override filter
+	$disable = csidebars_get_setting('belowcontent_disable');
+	$disable = csidebars_check_context($disable, 'belowcontent');
+	$disable = apply_filters('csidebars_belowcontent_override', $disable);
 
-	// check if logged in and fall back
-	$vfallback = csidebars_get_option('belowcontent_fallback',true);
-	if ( ($vfallback == 'nooutput') && ($vcsidebarsstate == 'loggedin') ) {return '';}
-	if ($vfallback == 'fallback') {
-		if ( ($vdisable != 'yes') && ($vcsidebarsstate == 'loggedin') ) {
+	// --- check for logged in fallback ---
+	$fallback = csidebars_get_setting('belowcontent_fallback', true);
+	if ( ($fallback == 'nooutput') && ($csidebarsstate == 'loggedin') ) {return '';}
+	if ($fallback == 'fallback') {
+		if ( ($disable != 'yes') && ($csidebarsstate == 'loggedin') ) {
+
+			// --- get logged in sidebar fallback ---
 			// 1.4.5: check mode and call to member sidebar function
-			$vmode = csidebars_get_option('membersidebar_mode', 'fallback');
-			if ($vmode == 'standalone') {return '';}
-			$vsidebar = PHP_EOL.'<div id="belowcontentsidebar" class="contentsidebar loggedinsidebar">';
-			$vsidebar .= csidebars_member_sidebar();
-			$vsidebar .= '</div>'.PHP_EOL;
+			// 1.6.5: removed fallback argument for get setting
+			$mode = csidebars_get_setting('membersidebar_mode');
+			if ($mode == 'standalone') {return '';}
+			$sidebar = PHP_EOL.'<div id="belowcontentsidebar" class="contentsidebar loggedinsidebar">'.PHP_EOL;
+			$sidebar .= csidebars_member_sidebar();
+			$sidebar .= '</div>'.PHP_EOL;
+
+			// --- filter logged in sidebar fallback and return ---
 			// 1.5.5: apply backward compatible and new filter prefix
-			$vsidebar = apply_filters('fcs_belowcontent_sidebar_loggedin', $vsidebar);
-			$vsidebar = apply_filters('csidebars_belowcontent_sidebar_loggedin', $vsidebar);
-			return $vsidebar;
-		 }
+			// 1.6.5: removed old fcs prefixed filters
+			// $sidebar = apply_filters('fcs_belowcontent_sidebar_loggedin', $sidebar);
+			$sidebar = apply_filters('csidebars_belowcontent_sidebar_loggedin', $sidebar);
+			return $sidebar;
+		 } else {return '';}
+	} // otherwise, fall sideways this time :-]
+
+	// --- check for disable override ---
+	// if (get_post_meta($postid, '_disablebelowcontentsidebar', true) == 'yes') {$disable = 'yes';}
+	if (isset($csidebarsoverrides['belowcontent'])) {
+		if ($csidebarsoverrides['belowcontent'] == 'disable') {$disable = 'yes';}
+		if ($csidebarsoverrides['belowcontent'] == 'enable') {$disable = '';}
 	}
 
-	// otherwise, fall sideways :-]
-	// if (get_post_meta($vpostid,'_disablebelowcontentsidebar', true) == 'yes') {$vdisable = 'yes';}
-	if (isset($vcsidebarsoverrides['belowcontent'])) {
-		if ($vcsidebarsoverrides['belowcontent'] == 'disable') {$vdisable = 'yes';}
-		if ($vcsidebarsoverrides['belowcontent'] == 'enable') {$vdisable = '';}
-	}
-	if ($vdisable != 'yes') {
-		if (is_active_sidebar('BelowContent')) {
-			// 1.4.5: replaced loggedout with login state variable class
-			$vsidebar = PHP_EOL.'<div id="belowcontentsidebar" class="contentsidebar '.$vcsidebarsstate.'sidebar">';
-			$vsidebar .= csidebars_get_sidebar('BelowContent');
-			$vsidebar .= '</div>'.PHP_EOL;
-		} else {$vsidebar = '';}
+	// --- bug out if disabled ---
+	if ($disable == 'yes') {return '';}
 
-		// 1.5.5: apply backward compatible and new filter prefix
-		$vsidebar = apply_filters('fcs_belowcontent_sidebar', $vsidebar);
-		$vsidebar = apply_filters('csidebars_belowcontent_sidebar', $vsidebar);
-		$vsidebar = apply_filters('fcs_belowcontent_sidebar_'.$vcsidebarsstate, $vsidebar);
-		$vsidebar = apply_filters('csidebars_belowcontent_sidebar_'.$vcsidebarsstate, $vsidebar);
-		return $vsidebar;
-	}
-	return '';
+	// --- get below content sidebar ---
+	if (is_active_sidebar('BelowContent')) {
+		// 1.4.5: replaced loggedout with login state variable class
+		$sidebar = PHP_EOL.'<div id="belowcontentsidebar" class="contentsidebar '.$csidebarsstate.'sidebar">'.PHP_EOL;
+		$sidebar .= csidebars_get_sidebar('BelowContent');
+		$sidebar .= '</div>'.PHP_EOL;
+	} else {$sidebar = '';}
+
+	// --- filter below content sidebar and return ---
+	// 1.5.5: apply backward compatible and new filter prefix
+	// 1.6.5: removed old fcs prefixed filters
+	// $sidebar = apply_filters('fcs_belowcontent_sidebar', $sidebar);
+	$sidebar = apply_filters('csidebars_belowcontent_sidebar', $sidebar);
+	// $sidebar = apply_filters('fcs_belowcontent_sidebar_'.$csidebarsstate, $sidebar);
+	$sidebar = apply_filters('csidebars_belowcontent_sidebar_'.$csidebarsstate, $sidebar);
+	return $sidebar;
 }
 
-// -----------------------------------
-// Above/Below Content - Filter Method
-// -----------------------------------
+// ---------------------------------
+// Above/Below Content Filter Method
+// ---------------------------------
 // 1.3.5: removed code duplication (now just use above functions)
-function csidebars_add_content_sidebars($vcontent) {
+function csidebars_add_content_sidebars($content) {
+
+	// --- for content only, not excerpts ---
 	// 1.4.5: bug out if excerpting
-	global $vcsidebarsexcerpt; if ($vcsidebarsexcerpt) {return $vcontent;}
+	global $csidebarsexcerpt;
+	if ($csidebarsexcerpt) {return $content;}
 
-	// above content sidebar
+	// --- get above content sidebar ---
 	// 1.4.5: use return value not output buffering
 	// 1.5.9: fix to old function name
-	$vtopsidebar = csidebars_abovecontent_sidebar();
+	$topsidebar = csidebars_abovecontent_sidebar();
 
-	// below content sidebar
+	// --- get below content sidebar ---
 	// 1.4.5: use return value not output buffering
 	// 1.5.9: fix to old function name
-	$vbottomsidebar = csidebars_belowcontent_sidebar();
+	$bottomsidebar = csidebars_belowcontent_sidebar();
 
-	$vcontent = $vtopsidebar.$vcontent.$vbottomsidebar;
-	return $vcontent;
+	// --- wrap content with sidebars and return ---
+	$content = $topsidebar.$content.$bottomsidebar;
+	return $content;
 }
 
-// ------------------
-// Shortcode Sidebars
-// ------------------
+
+// --------------------------
+// === Shortcode Sidebars ===
+// --------------------------
+
+// ----------------------
+// Add Shortcode Sidebars
+// ----------------------
 // 1.3.5: just add and check disable/overrides within shortcodes
 add_action('init','csidebars_sidebar_shortcodes');
 function csidebars_sidebar_shortcodes() {
-	if (!is_admin()) {
-		add_shortcode('shortcode-sidebar-1', 'csidebars_shortcode_sidebar1');
-		add_shortcode('shortcode-sidebar-2', 'csidebars_shortcode_sidebar2');
-		add_shortcode('shortcode-sidebar-3', 'csidebars_shortcode_sidebar3');
-	}
+	// 1.6.5: removed unnecessary is_admin check
+	add_shortcode('shortcode-sidebar-1', 'csidebars_shortcode_sidebar1');
+	add_shortcode('shortcode-sidebar-2', 'csidebars_shortcode_sidebar2');
+	add_shortcode('shortcode-sidebar-3', 'csidebars_shortcode_sidebar3');
 }
 // 1.3.5: replaced individual shortcodes with abstract calls
 function csidebars_shortcode_sidebar1() {return csidebars_shortcode_sidebar('1');}
 function csidebars_shortcode_sidebar2() {return csidebars_shortcode_sidebar('2');}
 function csidebars_shortcode_sidebar3() {return csidebars_shortcode_sidebar('3');}
 
-// Shortcode Sidebar Abstract
-// --------------------------
+// ------------------------
+// Shortcode Sidebar Output
+// ------------------------
 // 1.3.5: replace individual functions with abstracted function
-function csidebars_shortcode_sidebar($vid) {
-	global $post, $vcsidebarsoverrides, $vcsidebarsstate, $vcsidebarsexcerpt;
+function csidebars_shortcode_sidebar($id) {
+	global $post, $csidebarsoverrides, $csidebarsstate, $csidebarsexcerpt;
 
-	// 1.6.1: set empty sidebar to avoid warning
-	$vsidebar = '';
-
+	// --- check for excerpting ---
 	// 1.4.5: bug out if excerpting
-	if ($vcsidebarsexcerpt) {
+	if ($csidebarsexcerpt) {
 		// normally we do not actually want to output shortcode sidebars in excerpts,
 		// but for flexibility in usage let us give the user the option to do so
-		$vprocess = csidebars_get_option('sidebars_in_excerpts', true);
+		$process = csidebars_get_setting('sidebars_in_excerpts');
 		// 1.5.5: add prefix to this filter for specific shortcode sidebar in excerpts
-		$vprocess = apply_filters('csidebars_shortcode_sidebar'.$vid.'_in_excerpts', $vprocess);
-		if (!$vprocess) {return '';}
+		// 1.6.5: added general name to allow filtering shortcode sidebars in excerpts
+		$process = apply_filters('csidebars_shortcode_sidebars_in_excerpts', $process);
+		$process = apply_filters('csidebars_shortcode_sidebar'.$id.'_in_excerpts', $process);
+		if (!$process) {return '';}
 	}
 
-	// check if sidebar is disabled
-	$vdisable = csidebars_get_option('shortcode'.$vid.'_disable', true);
-	if (is_object($post)) {
-		$vpostid = $post->ID;
-		// 1.5.5: removed old post meta key check
-		// if (get_post_meta($vpostid,'_disableshortcodesidebar'.$vid,true) == 'yes') {$vdisable = 'yes';}
-		if (isset($vcsidebarsoverrides['shortcodesidebar'.$vid])) {
-			if ($vcsidebarsoverrides['shortcodesidebar'.$vid] == 'disable') {$vdisable = 'yes';}
-			elseif ($vcsidebarsoverrides['shortcodesidebar'.$vid] == 'enable') {$vdisable = '';}
-		}
-	}
-	if ($vdisable == 'yes') {return '';}
+	// --- check if sidebar is disabled ---
+	// 1.6.5: added separate shortcode disable filter
+	$disable = csidebars_get_setting('shortcode'.$id.'_disable', true);
+	$disable = apply_filters('csidebars_shortcode'.$id.'_override', $disable);
 
-	// check if sidebar has widgets
-	if (is_active_sidebar('ShortcodeSidebar'.$vid)) {
-		$vsidebar = PHP_EOL.'<div id="shortcodesidebar'.$vid.'" class="shortcodesidebar '.$vcsidebarsstate.'sidebar">';
-		$vsidebar .= csidebars_get_sidebar('ShortcodeSidebar'.$vid);
-		$vsidebar .= '</div>'.PHP_EOL;
+	// --- check disable overrides ---
+	// 1.5.5: removed old post meta key check
+	// if (get_post_meta($postid, '_disableshortcodesidebar'.$id, true) == 'yes') {$disable = 'yes';}
+	if (isset($csidebarsoverrides['shortcodesidebar'.$id])) {
+		if ($csidebarsoverrides['shortcodesidebar'.$id] == 'disable') {$disable = 'yes';}
+		elseif ($csidebarsoverrides['shortcodesidebar'.$id] == 'enable') {$disable = '';}
 	}
 
-	// apply sidebar output filters
+	// --- bug out if disabled ---
+	if ($disable == 'yes') {return '';}
+
+	// --- get shortcode sidebar ---
+	if (is_active_sidebar('ShortcodeSidebar'.$id)) {
+		$sidebar = PHP_EOL.'<div id="shortcodesidebar'.$id.'" class="shortcodesidebar '.$csidebarsstate.'sidebar">'.PHP_EOL;
+		$sidebar .= csidebars_get_sidebar('ShortcodeSidebar'.$id);
+		$sidebar .= '</div>'.PHP_EOL;
+	} else {$sidebar = '';}
+
+	// --- apply shortcode sidebar filters and return ---
 	// 1.5.5: apply backward compatible and new filter prefix
-	$vsidebar = apply_filters('fcs_shortcode_sidebar'.$vid, $vsidebar);
-	$vsidebar = apply_filters('csidebars_shortcode_sidebar'.$vid, $vsidebar);
-	$vsidebar = apply_filters('fcs_shortcode_sidebar'.$vid.'_'.$vcsidebarsstate, $vsidebar);
-	$vsidebar = apply_filters('csidebars_shortcode_sidebar'.$vid.'_'.$vcsidebarsstate, $vsidebar);
-	return $vsidebar;
+	// 1.6.5: removed old fcs prefixed filters
+	// $sidebar = apply_filters('fcs_shortcode_sidebar'.$id, $sidebar);
+	$sidebar = apply_filters('csidebars_shortcode_sidebar'.$id, $sidebar);
+	// $sidebar = apply_filters('fcs_shortcode_sidebar'.$id.'_'.$csidebarsstate, $sidebar);
+	$sidebar = apply_filters('csidebars_shortcode_sidebar'.$id.'_'.$csidebarsstate, $sidebar);
+	return $sidebar;
 }
 
-// ---------------
-// InPost Sidebars
-// ---------------
 
-add_action('init','csidebars_inpost_sidebars');
+// -----------------------
+// === InPost Sidebars ===
+// -----------------------
+
+// -------------------
+// Add InPost Sidebars
+// -------------------
+add_action('init', 'csidebars_inpost_sidebars');
 function csidebars_inpost_sidebars() {
-	if (!is_admin()) {
-		// 1.3.5: just add filter and check states within function
-		$vinpostpriority = csidebars_get_option('inpost_priority', true);
-		add_filter('the_content', 'csidebars_do_inpost_sidebars', $vinpostpriority);
-	}
+	// 1.3.5: just add filter and check states within function
+	// 1.6.5: removed unnecessary is_admin check
+	$inpostpriority = csidebars_get_setting('inpost_priority', true);
+	add_filter('the_content', 'csidebars_do_inpost_sidebars', $inpostpriority);
 }
 
-// Do InPost Sidebars
-// ------------------
-function csidebars_do_inpost_sidebars($vpostcontent) {
+// ---------------------
+// InPost Sidebar Output
+// ---------------------
+function csidebars_do_inpost_sidebars($postcontent) {
 
-	global $post, $vcsidebarsoverrides, $vcsidebarsexcerpt, $vcsidebarsstate;
+	global $post, $csidebarsoverrides, $csidebarsexcerpt, $csidebarsstate;
 
+	// --- not for excerpting or if empty ---
 	// 1.4.5: bug out if excerpting or empty post
-	if ($vcsidebarsexcerpt) {return $vpostcontent;}
-	if (!is_object($post)) {return $vpostcontent;}
+	if ($csidebarsexcerpt) {return $postcontent;}
+	if (!is_object($post)) {return $postcontent;}
 
-	// check for Content Marker (case insensitive)
-	$vcontentmarker = trim(csidebars_get_option('inpost_marker', true));
+	// --- check InPostContent Marker ---
+	// note: marker is intentionally case insensitive
 	// 1.6.2: hotfix - bug out if content marker is empty!
-	if ($vcontentmarker == '') {return $vpostcontent;}
-	if (!stristr($vpostcontent,$vcontentmarker)) {return $vpostcontent;}
+	// 1.6.5: do not trim marker in case space needed for matching
+	$contentmarker = csidebars_get_setting('inpost_marker');
+	if (trim($contentmarker) == '') {return $postcontent;}
+	if (!stristr($postcontent, $contentmarker)) {return $postcontent;}
 
-	// get general disable options (filtered)
-	$vinpostdisable1 = csidebars_get_option('inpost1_disable', true);
-	$vinpostdisable2 = csidebars_get_option('inpost2_disable', true);
-	$vinpostdisable3 = csidebars_get_option('inpost3_disable', true);
+	// --- get inpost sidebar disable options ---
+	$inpostdisable1 = csidebars_get_setting('inpost1_disable');
+	$inpostdisable2 = csidebars_get_setting('inpost2_disable');
+	$inpostdisable3 = csidebars_get_setting('inpost3_disable');
 
-	// check InPost disable options
-	$vpostid = $post->ID;
-	$vcptoptions = csidebars_get_option('inpost_sidebars_cpts', true);
-	if (strstr($vcptoptions, ',')) {$vinpostcpts = explode(',', $vcptoptions);}
-	else {$vinpostcpts[0] = $vcptoptions;}
-	$vinpostcpts = apply_filters('fcs_inpost_sidebars_cpts', $vinpostcpts);
-
+	// --- check InPost sidebars for custom post types ---
+	$postid = $post->ID;
+	$cptsettings = csidebars_get_setting('inpost_sidebars_cpts');
+	if (strstr($cptsettings, ',')) {$inpostcpts = explode(',', $cptsettings);}
+	else {$inpostcpts[0] = $cptsettings;}
+	$inpostcpts = apply_filters('fcs_inpost_sidebars_cpts', $inpostcpts);
+	// 1.6.5: added missing csidebars prefixed filter
+	$inpostcpts = apply_filters('csidebars_inpost_sidebars_cpts', $inpostcpts);
 	// 1.3.5: maybe disable for specified post types
-	if (is_array($vinpostcpts)) {
-		// check current post type against CPT array
-		$vposttype = get_post_type($vpostid);
-		if (!in_array($vposttype, $vinpostcpts)) {
-			$vinpostdisable1 = 'yes'; $vinpostdisable2 = 'yes'; $vinpostdisable3 = 'yes';
+	if (is_array($inpostcpts)) {
+		$posttype = get_post_type($postid);
+		if (!in_array($posttype, $inpostcpts)) {
+			$inpostdisable1 = $inpostdisable2 = $inpostdisable3 = 'yes';
 		}
 	}
 
+	// --- filter disable states ---
 	// 1.3.5: allow for disable option filtering
 	// 1.5.5: make these into disable override filters
-	$vinpostdisable1 = apply_filters('csidebars_inpost1_override', $vinpostdisable1);
-	$vinpostdisable2 = apply_filters('csidebars_inpost2_override', $vinpostdisable2);
-	$vinpostdisable3 = apply_filters('csidebars_inpost3_override', $vinpostdisable3);
+	$inpostdisable1 = apply_filters('csidebars_inpost1_override', $inpostdisable1);
+	$inpostdisable2 = apply_filters('csidebars_inpost2_override', $inpostdisable2);
+	$inpostdisable3 = apply_filters('csidebars_inpost3_override', $inpostdisable3);
 
+	// --- check disable overrides ---
 	// 1.3.5: check meta overrides here
-	if (isset($vcsidebarsoverrides['inpost1'])) {
-		if ($vcsidebarsoverrides['inpost1'] == 'disable') {$vinpostdisable1 = 'yes';}
-		if ($vcsidebarsoverrides['inpost1'] == 'enable') {$vinpostdisable1 = '';}
+	if (isset($csidebarsoverrides['inpost1'])) {
+		if ($csidebarsoverrides['inpost1'] == 'disable') {$inpostdisable1 = 'yes';}
+		if ($csidebarsoverrides['inpost1'] == 'enable') {$inpostdisable1 = '';}
 	}
-	if (isset($vcsidebarsoverrides['inpost2'])) {
-		if ($vcsidebarsoverrides['inpost2'] == 'disable') {$vinpostdisable2 = 'yes';}
-		if ($vcsidebarsoverrides['inpost2'] == 'enable') {$vinpostdisable2 = '';}
+	if (isset($csidebarsoverrides['inpost2'])) {
+		if ($csidebarsoverrides['inpost2'] == 'disable') {$inpostdisable2 = 'yes';}
+		if ($csidebarsoverrides['inpost2'] == 'enable') {$inpostdisable2 = '';}
 	}
-	if (isset($vcsidebarsoverrides['inpost3'])) {
-		if ($vcsidebarsoverrides['inpost3'] == 'disable') {$vinpostdisable3 = 'yes';}
-		if ($vcsidebarsoverrides['inpost3'] == 'enable') {$vinpostdisable3 = '';}
-	}
-
-	// bug out if all inpost sidebars are disabled
-	if ( ($vinpostdisable1 == 'yes') && ($vinpostdisable2 == 'yes') && ($vinpostdisable3 == 'yes') ) {return $vpostcontent;}
-
-	// Convert marker case - 'just in case'...
-	if ($vcontentmarker == strtolower($vcontentmarker)) {
-		if (strstr($vpostcontent,strtoupper($vcontentmarker))) {
-			$vpostcontent = str_replace(strtoupper($vcontentmarker), $vcontentmaker, $vpostcontent);
-		}
-	}
-	if ($vcontentmarker == strtoupper($vcontentmarker)) {
-		if (strstr($vpostcontent,strtolower($vcontentmarker))) {
-			$vpostcontent = str_replace(strtolower($vcontentmarker), $vcontentmaker, $vpostcontent);
-		}
+	if (isset($csidebarsoverrides['inpost3'])) {
+		if ($csidebarsoverrides['inpost3'] == 'disable') {$inpostdisable3 = 'yes';}
+		if ($csidebarsoverrides['inpost3'] == 'enable') {$inpostdisable3 = '';}
 	}
 
-	// get inpost content positions (filtered)
-	$vpositiona = csidebars_get_option('inpost_positiona', true);
-	$vpositionb = csidebars_get_option('inpost_positionb', true);
-	$vpositionc = csidebars_get_option('inpost_positionc', true);
-	if (!is_numeric($vpositiona)) {$vpositiona = -1;}
-	if (!is_numeric($vpositionb)) {$vpositionb = -1;}
-	if (!is_numeric($vpositionc)) {$vpositionc = -1;}
+	// --- bug out now if all inpost sidebars disabled ---
+	if ( ($inpostdisable1 == 'yes') && ($inpostdisable2 == 'yes') && ($inpostdisable3 == 'yes') ) {return $postcontent;}
 
-	// chunk the post content
-	$vchunks = explode($vcontentmarker,$vpostcontent);
+	// ---- convert marker case - 'just in case' ---
+	// 1.6.5: removed to use exact matching case
+	// if ($contentmarker == strtolower($contentmarker)) {
+	//	if (strstr($postcontent, strtoupper($contentmarker))) {
+	//		$postcontent = str_replace(strtoupper($contentmarker), $contentmaker, $postcontent);
+	//	}
+	// }
+	// if ($contentmarker == strtoupper($contentmarker)) {
+	//	if (strstr($postcontent, strtolower($contentmarker))) {
+	//		$postcontent = str_replace(strtolower($contentmarker), $contentmaker, $postcontent);
+	//	}
+	// }
 
+	// --- get inpost content positions (filtered) ---
+	$positiona = csidebars_get_setting('inpost_positiona');
+	$positionb = csidebars_get_setting('inpost_positionb');
+	$positionc = csidebars_get_setting('inpost_positionc');
+	if (!is_numeric($positiona)) {$positiona = -1;}
+	if (!is_numeric($positionb)) {$positionb = -1;}
+	if (!is_numeric($positionc)) {$positionc = -1;}
+
+	// --- chunk the content using marker ---
+	$chunks = explode($contentmarker, $postcontent);
+
+	// --- loop the split content chunks ----
 	// 1.4.0: start count at 1 not 0
-	$vcount = 1; $vcontent = '';
-	foreach ($vchunks as $vchunk) {
-		$vcontent .= $vchunk;
-		if ( ($vcount == $vpositiona) && ($vinpostdisable1 != 'yes') ) {
+	$count = 1; $content = '';
+	foreach ($chunks as $chunk) {
+
+		$content .= $chunk;
+
+		if ( ($count == $positiona) && ($inpostdisable1 != 'yes') ) {
+
+			// --- get inpost sidebar 1 ---
 			if (is_active_sidebar('InPost1')) {
-				$vsidebar = PHP_EOL.'<div id="inpostsidebar1" class="inpostsidebar"';
+				$sidebar = PHP_EOL.'<div id="inpostsidebar1" class="inpostsidebar"';
 				// 1.4.0: added float style option
-				$vfloat = csidebars_get_option('inpost1_float',true);
-				if ($vfloat != '') {
-					$vsidebar .= ' style="float:'.$vfloat.';';
-					if ($vfloat == 'left') {$vsidebar .= 'margin-right:30px;"';}
-					elseif ($vfloat == 'right') {$vsidebar .= 'margin-left:30px;"';}
-					else {$vsidebar .= '"';}
+				$float = csidebars_get_setting('inpost1_float');
+				if ($float != '') {
+					$sidebar .= ' style="float:'.$float.';';
+					if ($float == 'left') {$sidebar .= 'margin-right:30px;"';}
+					elseif ($float == 'right') {$sidebar .= 'margin-left:30px;"';}
+					else {$sidebar .= '"';}
 				}
-				$vsidebar .= '>';
-				$vsidebar .= csidebars_get_sidebar('InPost1');
-				$vsidebar .= '</div>'.PHP_EOL.PHP_EOL;
-			} else {$vsidebar = '';}
+				$sidebar .= '>';
+				$sidebar .= csidebars_get_sidebar('InPost1');
+				$sidebar .= '</div>'.PHP_EOL.PHP_EOL;
+			} else {$sidebar = '';}
+
+			// --- filter inpost sidebar 1 ---
 			// 1.5.5: apply backwards compatible and new filter prefix
-			$vsidebar = apply_filters('csidebars_inpost_sidebar', $vsidebar);
-			$vsidebar = apply_filters('fcs_inpost_sidebar1', $vsidebar);
-			$vsidebar = apply_filters('csidebars_inpost_sidebar1', $vsidebar);
-			$vsidebar = apply_filters('fcs_inpost_sidebar1_'.$vcsidebarsstate, $vsidebar);
-			$vsidebar = apply_filters('csidebars_inpost_sidebar1_'.$vcsidebarsstate, $vsidebar);
-			$vcontent .= $vsidebar;
-		}
-		elseif ( ($vcount == $vpositionb) && ($vinpostdisable2 != 'yes') ) {
+			// 1.6.5: removed old fcs prefixed filters
+			$sidebar = apply_filters('csidebars_inpost_sidebar', $sidebar);
+			// $sidebar = apply_filters('fcs_inpost_sidebar1', $sidebar);
+			$sidebar = apply_filters('csidebars_inpost_sidebar1', $sidebar);
+			// $sidebar = apply_filters('fcs_inpost_sidebar1_'.$csidebarsstate, $sidebar);
+			$sidebar = apply_filters('csidebars_inpost_sidebar1_'.$csidebarsstate, $sidebar);
+			$content .= $sidebar;
+
+		} elseif ( ($count == $positionb) && ($inpostdisable2 != 'yes') ) {
+
+			// --- get inpost sidebar 2 ---
 			if (is_active_sidebar('InPost2')) {
-				$vsidebar = 'PHP_EOL.<div id="inpostsidebar2" class="inpostsidebar"';
+				$sidebar = 'PHP_EOL.<div id="inpostsidebar2" class="inpostsidebar"';
 				// 1.4.0: added float style option
-				$vfloat = csidebars_get_option('inpost2_float', true);
-				if ($vfloat != '') {
-					$vsidebar .= ' style="float:'.$vfloat.';';
-					if ($vfloat == 'left') {$vsidebar .= 'margin-right:30px;"';}
-					elseif ($vfloat == 'right') {$vsidebar .= 'margin-left:30px;"';}
-					else {$vsidebar .= '"';}
+				$float = csidebars_get_setting('inpost2_float');
+				if ($float != '') {
+					$sidebar .= ' style="float:'.$float.';';
+					if ($float == 'left') {$sidebar .= 'margin-right:30px;"';}
+					elseif ($float == 'right') {$sidebar .= 'margin-left:30px;"';}
+					else {$sidebar .= '"';}
 				}
-				$vsidebar .= '>';
-				$vsidebar .= csidebars_get_sidebar('InPost2');
-				$vsidebar .= '</div>'.PHP_EOL.PHP_EOL;
-			} else {$vsidebar = '';}
+				$sidebar .= '>';
+				$sidebar .= csidebars_get_sidebar('InPost2');
+				$sidebar .= '</div>'.PHP_EOL.PHP_EOL;
+			} else {$sidebar = '';}
+
+			// --- filter inpost sidebar 2 ---
 			// 1.5.5: apply backwards compatible and new filter prefix
-			$vsidebar = apply_filters('csidebars_inpost_sidebar', $vsidebar);
-			$vsidebar = apply_filters('fcs_inpost_sidebar2', $vsidebar);
-			$vsidebar = apply_filters('csidebars_inpost_sidebar2', $vsidebar);
-			$vsidebar = apply_filters('fcs_inpost_sidebar2_'.$vcsidebarsstate, $vsidebar);
-			$vsidebar = apply_filters('csidebars_inpost_sidebar2_'.$vcsidebarsstate, $vsidebar);
-			$vcontent .= $vsidebar;
-		}
-		elseif ( ($vcount == $vpositionc) && ($vinpostdisable3 != 'yes') ) {
+			// 1.6.5: removed old fcs prefixed filters
+			$sidebar = apply_filters('csidebars_inpost_sidebar', $sidebar);
+			// $sidebar = apply_filters('fcs_inpost_sidebar2', $sidebar);
+			$sidebar = apply_filters('csidebars_inpost_sidebar2', $sidebar);
+			// $sidebar = apply_filters('fcs_inpost_sidebar2_'.$csidebarsstate, $sidebar);
+			$sidebar = apply_filters('csidebars_inpost_sidebar2_'.$csidebarsstate, $sidebar);
+			$content .= $sidebar;
+
+		} elseif ( ($count == $positionc) && ($inpostdisable3 != 'yes') ) {
+
+			// --- get inpost sidebar 3 ---
 			if (is_active_sidebar('InPost3')) {
-				$vsidebar = PHP_EOL.'<div id="inpostsidebar3" class="inpostsidebar"';
+				$sidebar = PHP_EOL.'<div id="inpostsidebar3" class="inpostsidebar"';
 				// 1.4.0: added float style option
-				$vfloat = csidebars_get_option('inpost3_float',true);
-				if ($vfloat != '') {
-					$vsidebar .= ' style="float:'.$vfloat.';';
-					if ($vfloat == 'left') {$vsidebar .= 'margin-right:30px;"';}
-					elseif ($vfloat == 'right') {$vsidebar .= 'margin-left:30px;"';}
-					else {$vsidebar .= '"';}
+				$float = csidebars_get_setting('inpost3_float',true);
+				if ($float != '') {
+					$sidebar .= ' style="float:'.$float.';';
+					if ($float == 'left') {$sidebar .= 'margin-right:30px;"';}
+					elseif ($float == 'right') {$sidebar .= 'margin-left:30px;"';}
+					else {$sidebar .= '"';}
 				}
-				$vsidebar .= '>';
-				$vsidebar .= csidebars_get_sidebar('InPost3');
-				$vsidebar .= '</div>'.PHP_EOL.PHP_EOL;
-			} else {$vsidebar = '';}
+				$sidebar .= '>';
+				$sidebar .= csidebars_get_sidebar('InPost3');
+				$sidebar .= '</div>'.PHP_EOL.PHP_EOL;
+			} else {$sidebar = '';}
+
+			// --- filter inpost sidebar 3 ---
 			// 1.5.5: apply backwards compatible and new filter prefix
-			$vsidebar = apply_filters('csidebars_inpost_sidebar', $vsidebar);
-			$vsidebar = apply_filters('fcs_inpost_sidebar3', $vsidebar);
-			$vsidebar = apply_filters('csidebars_inpost_sidebar3', $vsidebar);
-			$vsidebar = apply_filters('fcs_inpost_sidebar3_'.$vcsidebarsstate, $vsidebar);
-			$vsidebar = apply_filters('csidebars_inpost_sidebar3_'.$vcsidebarsstate, $vsidebar);
-			$vcontent .= $vsidebar;
+			$sidebar = apply_filters('csidebars_inpost_sidebar', $sidebar);
+			// $sidebar = apply_filters('fcs_inpost_sidebar3', $sidebar);
+			$sidebar = apply_filters('csidebars_inpost_sidebar3', $sidebar);
+			// $sidebar = apply_filters('fcs_inpost_sidebar3_'.$csidebarsstate, $sidebar);
+			$sidebar = apply_filters('csidebars_inpost_sidebar3_'.$csidebarsstate, $sidebar);
+			$content .= $sidebar;
 		}
-		$vcount++;
+		$count++;
 	}
-	return $vcontent;
+	return $content;
 }
 
-// -----------------
-// Metabox Overrides
-// -----------------
 
-add_action('add_meta_boxes','csidebars_add_perpage_metabox');
+// -------------------------
+// === Metabox Overrides ===
+// -------------------------
+
+// ----------------------------
+// Add Metaboxes for Post Types
+// ----------------------------
+add_action('add_meta_boxes', 'csidebars_add_perpage_metabox');
 function csidebars_add_perpage_metabox() {
 
-	$vcpts[0] = 'post'; $vcpts[1] = 'page';
-	$vargs = array('public' => true, '_builtin' => false);
-	$vcptlist = get_post_types($vargs, 'names', 'and');
-	$vcpts = array_merge($vcpts,$vcptlist);
+	// --- get post types ---
+	$cpts = array('post', 'page');
+	$args = array('public' => true, '_builtin' => false);
+	$cptlist = get_post_types($args, 'names', 'and');
+	$cpts = array_merge($cpts, $cptlist);
 
-	// you can use this filter to conditionally adjust the post types for which the metabox is shown
+	// --- filter post types ---
+	// (to adjust the post types for which the metabox is shown)
 	// 1.3.5: changed this filter name to match purpose
 	// 1.5.5: apply backwards compatible and new filter prefix
-	$vcpts = apply_filters('fcs_metabox_cpts', $vcpts);
-	$vcpts = apply_filters('csidebars_metabox_cpts', $vcpts);
+	// 1.6.5: removed old fcs prefixed filter
+	// $cpts = apply_filters('fcs_metabox_cpts', $cpts);
+	$cpts = apply_filters('csidebars_metabox_cpts', $cpts);
 
+	// --- loop post types to add metabox ---
 	// 1.3.5: fix to variable typo here
-	if (count($vcpts) > 0) {
-		foreach ($vcpts as $vcpt) {
-			add_meta_box('csidebars_perpage_metabox', 'Content Sidebars', 'csidebars_perpage_metabox', $vcpt, 'normal', 'low');
+	if (count($cpts) > 0) {
+		foreach ($cpts as $cpt) {
+			add_meta_box('csidebars_perpage_metabox', 'Content Sidebars', 'csidebars_perpage_metabox', $cpt, 'normal', 'low');
 		}
 	}
 }
 
+// ------------------------
 // Content Sidebars Metabox
 // ------------------------
 function csidebars_perpage_metabox() {
 
-	global $post, $vcsidebarsoverrides;
+	global $post, $csidebarsoverrides;
+
 	if (is_object($post)) {
-		$vpostid = $post->ID;
-		$vposttype = get_post_type($vpostid);
-		$vposttypeobject = get_post_type_object($vposttype);
-		$vposttypedisplay = $vposttypeobject->labels->singular_name;
-	} else {$vposttypedisplay = __('Post','csidebars');}
+		$postid = $post->ID;
+		$posttype = get_post_type($postid);
+		$posttypeobject = get_post_type_object($posttype);
+		$posttypedisplay = $posttypeobject->labels->singular_name;
+	} else {$posttypedisplay = __('Post','csidebars');}
 
 	echo "<style>.fcs-small {font-size:8pt;}</style>";
 
@@ -2213,93 +2241,100 @@ function csidebars_perpage_metabox() {
 	echo __('current settings','csidebars');
 	echo "</b></a> ";
 	echo __('for Content Sidebar Output on this','csidebars');
-	echo " ".$vposttypedisplay." (";
+	echo " ".$posttypedisplay." (";
 	echo __('indicated in bold','csidebars')."):<br>";
 
-	// Above/Below, Login/LoggedIn
+	// --- Above/Below, Login/LoggedIn ---
 	echo "<table><tr>";
 	echo "<td>".__('Above Content','csidebars')."</td>";
-	csidebars_output_setting_cell('abovecontent');
+		csidebars_output_setting_cell('abovecontent');
 	echo "<td width='20'>&nbsp;</td>";
 	echo "<td>".__('Below Content','csidebars')."</td>";
-	csidebars_output_setting_cell('belowcontent');
+		csidebars_output_setting_cell('belowcontent');
 	echo "</tr>";
 	echo "<tr><td>".__('Login','csidebars')."</td>";
-	csidebars_output_setting_cell('login');
+		csidebars_output_setting_cell('login');
 	echo "<td width='20'>&nbsp;</td>";
 	echo "<td><span class='fcs-small'>".__('Logged In (fallback)','csidebars')."</span></td>";
-	csidebars_output_setting_cell('member');
+		csidebars_output_setting_cell('member');
 	echo "</tr>";
 
-	// Shortcode and InPost Sidebars
+	// --- Shortcode and InPost Sidebars ---
 	echo "<tr><td>".__('Shortcode','csidebars').' 1'."</td>";
-	csidebars_output_setting_cell('shortcode1');
+		csidebars_output_setting_cell('shortcode1');
 	echo "<td width='20'>&nbsp;</td>";
 	echo "<td>".__('InPost','csidebars')." 1</td>";
-	csidebars_output_setting_cell('inpost1');
+		csidebars_output_setting_cell('inpost1');
 	echo "</tr>";
 	echo "<tr><td>".__('Shortcode','csidebars')." 2</td>";
-	csidebars_output_setting_cell('shortcode2');
+		csidebars_output_setting_cell('shortcode2');
 	echo "<td width='20'>&nbsp;</td>";
 	echo "<td>".__('InPost','csidebars')." 2</td>";
-	csidebars_output_setting_cell('inpost2');
+		csidebars_output_setting_cell('inpost2');
 	echo "</tr>";
 	echo "<tr><td>".__('Shortcode','csidebars')." 3</td>";
-	csidebars_output_setting_cell('shortcode3');
+		csidebars_output_setting_cell('shortcode3');
 	echo "<td width='20'>&nbsp;</td>";
 	echo "<td>".__('InPost','csidebars')." 3</td>";
-	csidebars_output_setting_cell('inpost3');
+		csidebars_output_setting_cell('inpost3');
 	echo "</tr>";
-
 	echo "</table>";
 }
 
-// Output Setting Cell
-// -------------------
-function csidebars_output_setting_cell($vid) {
-	global $vcsidebarsoverrides, $post;
+// ---------------------------
+// Output Metabox Setting Cell
+// ---------------------------
+function csidebars_output_setting_cell($id) {
+	global $csidebarsoverrides, $post;
 
-	// check sidebar state
-	$vdisable = csidebars_get_option($vid.'_disable');
-	if ($vdisable == 'yes') {$vstate = 'off';}
+	// --- check sidebar state---
+	$disable = csidebars_get_setting($id.'_disable',false);
+
+	if ($disable == 'yes') {$state = 'off';}
 	else {
-		$vstate = 'on';
-		// check output for this post type
-		if ( (is_object($post)) && (!strstr($vid,'shortcode')) ) {
-			if (strstr($vid,'inpost')) {$vsidebarcpts = csidebars_get_option('inpost_sidebars_cpts');}
-			else {$vsidebarcpts = csidebars_get_option($vid.'_sidebar_cpts');}
-			if (strstr($vsidebarcpts,',')) {$vcpts = explode(',',$vsidebarcpts);}
-			else {$vcpts[0] = $vsidebarcpts;}
-			$vposttype = get_post_type($post->ID);
-			// echo $vid.'--'.$vposttype; print_r($vcpts); echo "<br>";
-			if (!in_array($vposttype,$vcpts)) {$vstate = 'off';}
+		// --- set default state ---
+		$state = 'on';
+
+		// --- check default state for this post type ---
+		if (is_object($post) && !strstr($id, 'shortcode')) {
+			if (strstr($id, 'inpost')) {$sidebarcpts = csidebars_get_setting('inpost_sidebars_cpts');}
+			else {$sidebarcpts = csidebars_get_setting($id.'_sidebar_cpts');}
+			if (strstr($sidebarcpts, ',')) {$cpts = explode(',', $sidebarcpts);} else {$cpts[0] = $sidebarcpts;}
+			$posttype = get_post_type($post->ID);
+			// echo $id.'--'.$posttype; print_r($cpts); echo "<br>";
+			if (!in_array($posttype, $cpts)) {$state = 'off';}
 		}
 	}
-	if ($vstate == 'on') {$voff = __('Off','csidebars'); $von = "<b>".__('On','csidebars')."</b>";}
-	if ($vstate == 'off') {$von = __('On','csidebars'); $voff = "<b>".__('Off','csidebars')."</b>";}
 
-	// filter disable check
-	if ( ($vid == 'login') || ($vid == 'member') ) {$vfilter = 'csidebars_'.$vid.'sidebar_disable';}
-											  else {$vfilter = 'csidebars_'.$vid.'_disable';}
+	// --- set sidebar state labels ---
+	if ($state == 'on') {$off = __('Off','csidebars'); $on = "<b>".__('On','csidebars')."</b>";}
+	if ($state == 'off') {$on = __('On','csidebars'); $off = "<b>".__('Off','csidebars')."</b>";}
 
-	$vfiltered = apply_filters($vfilter,$vstate);
-	if ($vfiltered != $vstate) {
-		if ($vfiltered == 'yes') {$von = __('On','csidebars'); $voff = "<b>".__('Off','csidebars')."</b>*";}
-		elseif ($vfiltered == '') {$voff = __('Off','csidebars'); $von = "<b>".__('On','csidebars')."</b>*";}
+	// --- get filter disable name ---
+	if ( ($id == 'login') || ($id == 'member') ) {$filter = 'csidebars_'.$id.'sidebar_disable';}
+											else {$filter = 'csidebars_'.$id.'_disable';}
+
+	// --- check disabled filter ---
+	$filtered = apply_filters($filter, $state);
+	if ($filtered != $state) {
+		if ($filtered == 'yes') {$on = __('On','csidebars'); $off = "<b>".__('Off','csidebars')."</b>*";}
+		elseif ($filtered == '') {$off = __('Off','csidebars'); $on = "<b>".__('On','csidebars')."</b>*";}
 	}
 
-	echo "<td> <input type='radio' name='fcs_".$vid."' value=''";
-	if ($vcsidebarsoverrides[$vid] == '') {echo " checked";}
+	// --- output setting cells ---
+	echo "<td> <input type='radio' name='fcs_".$id."' value=''";
+		if ($csidebarsoverrides[$id] == '') {echo " checked";}
 	echo "> <span class='fcs-small'>".__('Current','csidebars')."</span></td><td width='5'></td>";
-	echo "<td> <input type='radio' name='fcs_".$vid."' value='enable'";
-	if ($vcsidebarsoverrides[$vid] == 'enable') {echo " checked";}
-	echo "> ".$von."</td><td width='5'></td>";
+	echo "<td> <input type='radio' name='fcs_".$id."' value='enable'";
+		if ($csidebarsoverrides[$id] == 'enable') {echo " checked";}
+	echo "> ".$on."</td><td width='5'></td>";
 	// 1.5.5: fix to missing disable value
-	echo "<td> <input type='radio' name='fcs_".$vid."' value='disable'";
-	if ($vcsidebarsoverrides[$vid] == 'disable') {echo " checked";}
-	echo "> ".$voff."</td>";
+	echo "<td> <input type='radio' name='fcs_".$id."' value='disable'";
+		if ($csidebarsoverrides[$id] == 'disable') {echo " checked";}
+	echo "> ".$off."</td>";
 }
 
+// --------------------------
 // Update Meta Values on Save
 // --------------------------
 add_action('publish_post', 'csidebars_perpage_updates');
@@ -2309,32 +2344,34 @@ add_action('save_post', 'csidebars_perpage_updates');
 function csidebars_perpage_updates() {
 
 	// 1.3.5: return if post object is empty
-	global $post, $vcsidebarsoverrides;
+	global $post, $csidebarsoverrides;
 	if (!is_object($post)) {return;}
-	$vpostid = $post->ID;
+	$postid = $post->ID;
 
-	if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {return $vpostid;}
-	if (!current_user_can('edit_posts')) {return $vpostid;}
-	if (!current_user_can('edit_post',$vpostid)) {return $vpostid;}
+	if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {return $postid;}
+	if (!current_user_can('edit_posts')) {return $postid;}
+	if (!current_user_can('edit_post', $postid)) {return $postid;}
 
-	$voptionkeys = array(
+	$optionkeys = array(
 		'abovecontent', 'belowcontent', 'login', 'member',
 		'shortcode1', 'shortcode2', 'shortcode3',
 		'inpost1', 'inpost2', 'inpost3'
 	);
 
-	$vcsidebarsoverrides = array();
-	foreach ($voptionkeys as $voptionkey) {
-		if (isset($_POST['fcs_'.$voptionkey])) {
-			$vposted = $_POST['fcs_'.$voptionkey];
+
+	$csidebarsoverrides = array();
+	foreach ($optionkeys as $optionkey) {
+		if (isset($_POST['fcs_'.$optionkey])) {
+			$posted = $_POST['fcs_'.$optionkey];
 			// 1.5.5: validate metabox save options
-			if ( ($vposted == '') || ($vposted == 'enable') || ($vposted == 'disable') ) {
-				$vcsidebarsoverrides[$voptionkey] = $vposted;
-			} else {$vcsidebarsoverrides[$voptionkey] = '';}
-		} else {$vcsidebarsoverrides[$voptionkey] = '';}
+			if ( ($posted == '') || ($posted == 'enable') || ($posted == 'disable') ) {
+				$csidebarsoverrides[$optionkey] = $posted;
+			} else {$csidebarsoverrides[$optionkey] = '';}
+		} else {$csidebarsoverrides[$optionkey] = '';}
 	}
-	delete_post_meta($vpostid,'content_sidebars');
-	add_post_meta($vpostid,'content_sidebars', $vcsidebarsoverrides);
+
+	// 1.6.5: use update_post_meta instead of delete and add
+	update_post_meta($postid, 'content_sidebars', $csidebarsoverrides);
 
 }
 
