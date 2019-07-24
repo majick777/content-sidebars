@@ -5,7 +5,7 @@ Plugin Name: Content Sidebars
 Plugin URI: http://wordquest.org/plugins/content-sidebars/
 Author: Tony Hayes
 Description: Adds Flexible Dynamic Sidebars to your Content Areas without editing your theme.
-Version: 1.6.5
+Version: 1.6.6
 Author URI: http://wordquest.org
 GitHub Plugin URI: majick777/content-sidebars
 @fs_premium_only pro-functions.php
