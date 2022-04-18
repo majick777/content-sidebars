@@ -336,6 +336,12 @@ conditions extremely flexible... we leave it up to your unlimited imagination!
 
 == Changelog ==
 
+= 1.6.8 =
+* Upgrade to Plugin Panel 1.2.2
+* Update to Freemius SDK 2.4.3
+* Add Shortcodes for Content and Guest/Member Sidebars
+* Fix to Plugin Settings saving
+
 = 1.6.7 =
 * Update to Plugin Panel 1.1.8
 * Update to WordQuest Helper 1.7.8
