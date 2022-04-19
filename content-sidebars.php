@@ -5,7 +5,7 @@ Plugin Name: Content Sidebars
 Plugin URI: http://wordquest.org/plugins/content-sidebars/
 Author: Tony Hayes
 Description: Adds Flexible Dynamic Sidebars to your Content Areas without editing your theme.
-Version: 1.6.7
+Version: 1.6.8
 Author URI: http://wordquest.org
 GitHub Plugin URI: majick777/content-sidebars
 @fs_premium_only pro-functions.php
@@ -190,10 +190,12 @@ $options = array(
 	'abovebelow_method'		=> array( 'type' => 'hooks/filter', 'default' => 'hooks'),
 
 	// --- template hooks ---
-	'abovecontent_hook'		=> array( 'type' => 'alphanumeric', 'default' => 'bioship_skeleton_before_loop' ),
-	'belowcontent_hook'		=> array( 'type' => 'alphanumeric', 'default' => 'bioship_skeleton_after_loop' ),
-	'loginsidebar_hook'		=> array( 'type' => 'alphanumeric', 'default' => 'bioship_skeleton_before_header' ),
-	'membersidebar_hook'		=> array( 'type' => 'alphanumeric', 'default' => 'bioship_skeleton_after_header' ),
+	// 1.6.8: change to text type and add options key
+	// 1.6.8: remove skeleton_ from Bioship hook names
+	'abovecontent_hook'		=> array( 'type' => 'text', 'options' => 'ALPHANUMERIC', 'default' => 'bioship_before_loop' ),
+	'belowcontent_hook'		=> array( 'type' => 'text', 'options' => 'ALPHANUMERIC', 'default' => 'bioship_after_loop' ),
+	'loginsidebar_hook'		=> array( 'type' => 'text', 'options' => 'ALPHANUMERIC', 'default' => 'bioship_before_header' ),
+	'membersidebar_hook'		=> array( 'type' => 'text', 'options' => 'ALPHANUMERIC', 'default' => 'bioship_after_header' ),
 
 	// --- hook priorities ---
 	'abovecontent_priority'		=> array( 'type' => 'numeric', 'default' => '5' ),
@@ -258,7 +260,7 @@ $options = array(
 	'sidebars_in_excerpts'		=> array( 'type' => 'checkbox', 'default' => '' ),
 
 	// --- CSS options ---
-	'css_mode'			=> array( 'type' => 'default/adminajax/right', 'default' => 'default' ),
+	'css_mode'				=> array( 'type' => 'default/adminajax/right', 'default' => 'default' ),
 	'dynamic_css'			=> array( 'type' => 'textarea', 'default' => $defaultcss ),
 	'last_saved'			=> array( 'type' => 'special', 'default' => time() ),
 
@@ -696,8 +698,10 @@ function csidebars_settings_page() {
 	// 1.5.0: add nonce field
 	echo '<h3>' . esc_html( __( 'Extra Sidebars', 'csidebars' ) ) . '</h3>';
 	echo '<form method="post" id="csidebars-update-form">';
-	echo '<input type="hidden" name="fcs_update_options" id="csidebars-update-action" value="yes">';
-	wp_nonce_field( 'content_sidebars' );
+	// 1.6.8: fix to update settings and nonce
+	// echo '<input type="hidden" name="fcs_update_options" id="csidebars-update-action" value="yes">';
+	echo '<input type="hidden" name="csidebars_update_settings" id="csidebars-update-action" value="yes">';
+	wp_nonce_field( 'content-sidebars_update_settings' );
 
 	// --- Above/Below Method ---
 	echo '<table><tr><td>';
@@ -2143,6 +2147,10 @@ function csidebars_login_sidebar_setup() {
 // --------------------
 // Login Sidebar Output
 // --------------------
+// 1.6.8: add member sidebar shortcode
+add_shortcode( 'guest-sidebar', 'csidebars_login_sidebar' );
+add_shortcode( 'login-sidebar', 'csidebars_login_sidebar' );
+add_shortcode( 'logged-out-sidebar', 'csidebars_login_sidebar' );
 function csidebars_login_sidebar_output() {
 	echo csidebars_login_sidebar();
 }
@@ -2258,6 +2266,9 @@ function csidebars_member_sidebar_setup() {
 // Member Sidebar Output
 // ---------------------
 // 1.4.5: added standalone member sidebar function
+// 1.6.8: add member sidebar shortcode
+add_shortcode( 'member-sidebar', 'csidebars_member_sidebar' );
+add_shortcode( 'logged-in-sidebar', 'csidebars_member_sidebar' );
 function csidebars_member_sidebar_output() {
 	echo csidebars_member_sidebar( true );
 }
@@ -2354,6 +2365,8 @@ function csidebars_content_sidebars_setup() {
 // ----------------------------
 // Above Content Sidebar Output
 // ----------------------------
+// 1.6.8: add below content sidebar shortcode
+add_shortcode( 'above-content-sidebar', 'csidebars_abovecontent_sidebar' );
 function csidebars_abovecontent_sidebar_output() {
 	echo csidebars_abovecontent_sidebar();
 }
@@ -2441,6 +2454,8 @@ function csidebars_abovecontent_sidebar() {
 // ----------------------------
 // Below Content Sidebar Output
 // ----------------------------
+// 1.6.8: add below content sidebar shortcode
+add_shortcode( 'below-content-sidebar', 'csidebars_belowcontent_sidebar' );
 function csidebars_belowcontent_sidebar_output() {
 	echo csidebars_belowcontent_sidebar();
 }
