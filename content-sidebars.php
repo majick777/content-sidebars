@@ -2,13 +2,12 @@
 
 /*
 Plugin Name: Content Sidebars
-Plugin URI: http://wordquest.org/plugins/content-sidebars/
+Plugin URI: https://wordquest.org/plugins/content-sidebars/
 Author: Tony Hayes
 Description: Adds Flexible Dynamic Sidebars to your Content Areas without editing your theme.
-Version: 1.6.8
-Author URI: http://wordquest.org
+Version: 1.7.0
+Author URI: https://wordquest.org
 GitHub Plugin URI: majick777/content-sidebars
-@fs_premium_only pro-functions.php
 */
 
 /* csidebars_ "Do you like seaside bars? I like seaside bars." */
@@ -457,10 +456,16 @@ function csidebars_widget_page_styles() {
 // -------------------
 add_action( 'widgets_admin_page', 'csidebars_widget_page_message', 11 );
 function csidebars_widget_page_message() {
-	$message = '<b>' . esc_html( __( 'Note', 'csidebars' ) ) . '</b>: ';
-	$message .= __( 'Inactive Content Sidebars are listed with lowercase titles.', 'csidebars' );
-	$message .= __( 'Activate them via the Content Sidebars settings page.', 'csidebars');
-	echo '<div class="message">' . esc_html( $message ) . '</div>';
+	
+	// 1.7.0: direct echo to fix bolded output
+	echo '<div class="message">' . "\n";
+		echo '<b>' . esc_html( __( 'Note', 'csidebars' ) ) . '</b>: ';
+		echo esc_html( __( 'Inactive Content Sidebars are listed with lowercase titles.', 'csidebars' ) );
+		echo ' ' . esc_html( __( 'Activate them via the Content Sidebars', 'csidebars' ) );
+		// 1.7.0: add settings page link
+		$setting_url = add_query_arg( 'page', 'content-sidebars', admin_url( 'admin.php' ) );
+		echo ' <a href="' . esc_url( $settings_url ) . '">' . esc_html( __( 'settings page' ) ) . '</a>.' . "\n";
+	echo '</div>' . "\n";
 }
 
 // --------------------

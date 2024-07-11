@@ -1,14 +1,14 @@
 === Content Sidebars ===
 Contributors: majick
-Donate link: http://wordquest.org/contribute/?plugin=content-sidebars
+Donate link: https://wordquest.org/contribute/?plugin=content-sidebars
 Tags: sidebars, widgets, widget areas, content area, content sidebar, content widgets, widgets in posts, widgets on pages, adsense
-Author URI: http://dreamjester.net
-Plugin URI: http://wordquest.org/plugins/content-sidebars/
+Author URI: https://dreamjester.net
+Plugin URI: https://wordquest.org/plugins/content-sidebars/
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 3.0.0
-Tested up to: 5.6.0
-Stable tag: trunk
+Tested up to: 6.5.5
+Stable tag: 1.7.0
 
 Give an instant boost to your Layout and Call-to-Action options. Auto-add Sidebars to your Post Content Display, inside and out!
 
@@ -47,8 +47,8 @@ type on the post writing/editing screen to enable/disable any of these sidebars 
 Filters and Widget plugins are available for advanced display and output logic for all 
 sidebars, giving even further flexible options to when and which sidebars are displayed.
 
-[Content Sidebars Home](http://wordquest.org/plugins/content-sidebars/)
-[Support Forum](http://wordquest.org/support/content-sidebars/)
+[Content Sidebars Home](https://wordquest.org/plugins/content-sidebars/)
+[Support Forum](https://wordquest.org/support/content-sidebars/)
 
 
 **Above/Below Content Sidebars** - *for Subscribe / Join / Call-to-Action Offers*
@@ -62,7 +62,7 @@ these spaces wisely on any webpage is a must.
 
 The Above/Below Sidebars work either via Template Action Hooks or Content Filters methods.
 Either method can be used with any theme. The Template Action Hook defaults are preconfigured 
-for immediate use with [BioShip Child Theme Framework](http://bioship.space)
+for immediate use with [BioShip Child Theme Framework](https://bioship.space)
 
 
 **Login Sidebar** - *for Easy Return Visitor Login*
@@ -105,8 +105,8 @@ nothing at all. If you were using a normal text widget it would still output the
 does not output at all. So this useful type of widget as been included with Content Sidebars.
 Credit: [Hackadelic Discreet Text Widget Plugin](https://wordpress.org/plugins/hackadelic-discreet-text-widget/)
 
-[Content Sidebars Home](http://wordquest.org/plugins/content-sidebars/)
-[Support Forum](http://wordquest.org/support/content-sidebars/)
+[Content Sidebars Home](https://wordquest.org/plugins/content-sidebars/)
+[Support Forum](https://wordquest.org/support/content-sidebars/)
 
 
 == Installation ==
@@ -336,6 +336,16 @@ conditions extremely flexible... we leave it up to your unlimited imagination!
 
 == Changelog ==
 
+= 1.7.0 =
+* Update to Plugin Panel 1.3.0
+* Update to Freemius SDK 2.7.2
+* Fixed: Note formatting on widget page
+
+= 1.6.9 =
+* Update to Plugin Panel 1.2.9
+* Update to Freemius SDK 2.5.10
+* Update to WordQuest Helper 1.8.2
+
 = 1.6.8 =
 * Upgrade to Plugin Panel 1.2.2
 * Update to Freemius SDK 2.4.3
@@ -452,25 +462,25 @@ conditions extremely flexible... we leave it up to your unlimited imagination!
 
 == Other Notes ==
 
-[Content Sidebars Home](http://wordquest.org/plugins/content-sidebars/)
+[Content Sidebars Home](https://wordquest.org/plugins/content-sidebars/)
 
 Like this plugin? Check out more of our free plugins here: 
-[WordQuest Alliance Plugins](http://wordquest.org/plugins/)
+[WordQuest Alliance Plugins](https://wordquest.org/plugins/)
 
 Looking for an awesome theme? Check out my child theme framework:
-[BioShip Child Theme Framework](http://bioship.space/)
+[BioShip Child Theme Framework](https://bioship.space/)
 
 = Support = 
 For support or if you have an idea to improve this plugin:
-[Content Sidebars Support Quests](http://wordquest.org/support/content-sidebars/)
+[Content Sidebars Support Quests](https://wordquest.org/support/content-sidebars/)
 
 = Donate = 
 To make a donation for a feature request, or to activate a supporter subscription:
-[Content Sidebars Donation](http://wordquest.org/contribute/?plugin=content-sidebars)
+[Content Sidebars Donation](https://wordquest.org/contribute/?plugin=content-sidebars)
 
 = Development =
 To contribute directly to development, fork on Github and do a pull request:
-[Content Sidebars on Github](http://github.com/majick777/content-sidebars/)
+[Content Sidebars on Github](https://github.com/majick777/content-sidebars/)
 
 = Planned Updates/Features =
 * Subcriber Recognition code via Cookie detection option
