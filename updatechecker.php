@@ -1241,7 +1241,7 @@ PucFactory::addVersion('PucGitHubChecker', 'PucGitHubChecker_2_1', '2.1');
 
 // --- maybe Load the Update Checker now ---
 if (isset($slug) && isset($file)) {
-	$url = 'http://wordquest.org/downloads/?action=get_metadata&slug='.$slug;
+	$url = 'https://wordquest.org/downloads/?action=get_metadata&slug='.$slug;
 	$updatecheck = new PluginUpdateChecker_2_1($url, $file, $slug);
 }
 
